@@ -36,10 +36,12 @@ const WIKILINK_RE = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
 let warnings = 0;
 
 function slugify(name) {
+  // \p{L}/\p{N} keep letters & digits from any script (Korean included) —
+  // a plain a-z0-9 charset would strip Korean folder names down to "".
   return name
     .toLowerCase()
     .replace(/_/g, "-")
-    .replace(/[^a-z0-9-]+/g, "-")
+    .replace(/[^\p{L}\p{N}-]+/gu, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 }
@@ -75,7 +77,9 @@ function findFileRecursive(basename, rootDir) {
 function makeResolver({ itemDir, subjectDir, publicItemDir, subjectSlug, itemSlug, relLabel }) {
   const sharedImgDir = path.join(subjectDir, "assignment_process", "이미지");
   return function resolve(rawName) {
-    const basename = path.basename(rawName.trim());
+    const trimmed = rawName.trim();
+    if (/^(https?:)?\/\//i.test(trimmed)) return trimmed; // external URL — pass through as-is
+    const basename = path.basename(trimmed);
     if (!basename) return rawName;
     const found =
       findFile(basename, [itemDir, sharedImgDir, subjectDir]) ||

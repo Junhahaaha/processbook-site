@@ -24,7 +24,9 @@ export default async function ItemPage({
 }: {
   params: Promise<{ subject: string; item: string }>;
 }) {
-  const { subject: subjectSlug, item: itemSlug } = await params;
+  const raw = await params;
+  const subjectSlug = decodeURIComponent(raw.subject);
+  const itemSlug = decodeURIComponent(raw.item);
   const subject = getSubject(subjectSlug);
   if (!subject) notFound();
 
