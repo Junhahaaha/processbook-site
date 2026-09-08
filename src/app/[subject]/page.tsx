@@ -1,7 +1,10 @@
+import fs from "node:fs";
+import path from "node:path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSubject, SUBJECTS } from "@/lib/subjects";
 import { getSubjectItems } from "@/lib/content.server";
+import { pickCardSkin } from "@/lib/card-skins";
 import StatusBadge from "@/components/StatusBadge";
 import BookmarkCounts from "@/components/BookmarkCounts";
 
@@ -26,16 +29,30 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
       </header>
 
       <div className="card-grid">
-        {items.map((item) => (
-          <Link key={item.slug} href={`/${subjectSlug}/${item.slug}`} className="item-card">
-            <div className="item-card-top">
-              <h2>{item.name}</h2>
-              <StatusBadge status={item.status} />
-            </div>
-            {item.category && <p className="item-card-category">{item.category}</p>}
-            <BookmarkCounts counts={item.bookmarkCounts} />
-          </Link>
-        ))}
+        {items.map((item) => {
+          const skin = pickCardSkin(`${subjectSlug}/${item.slug}`);
+          const hasSkin = fs.existsSync(path.join(process.cwd(), "public", "card-skins", skin.file));
+
+          return (
+            <Link
+              key={item.slug}
+              href={`/${subjectSlug}/${item.slug}`}
+              className={`item-card ${hasSkin ? "item-card-skinned" : ""}`}
+              style={
+                hasSkin
+                  ? { aspectRatio: skin.ratio, backgroundImage: `url(/card-skins/${skin.file})` }
+                  : undefined
+              }
+            >
+              <div className="item-card-top">
+                <h2>{item.name}</h2>
+                <StatusBadge status={item.status} />
+              </div>
+              {item.category && <p className="item-card-category">{item.category}</p>}
+              <BookmarkCounts counts={item.bookmarkCounts} />
+            </Link>
+          );
+        })}
         {items.length === 0 && <p className="empty-state">아직 등록된 항목이 없습니다.</p>}
       </div>
     </main>
