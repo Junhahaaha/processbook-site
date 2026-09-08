@@ -2,10 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSubject, SUBJECTS } from "@/lib/subjects";
 import { getSubjectItems } from "@/lib/content.server";
-import { getAvailableCardSkins, pickCardSkin } from "@/lib/card-skins.server";
+import { getAvailableCardSkins, hasClipAsset, pickCardSkin } from "@/lib/card-skins.server";
 import { jitterForSeed } from "@/lib/jitter";
+import { layoutClips } from "@/lib/clip-layout";
 import ItemCard from "@/components/ItemCard";
 import BookmarkCounts from "@/components/BookmarkCounts";
+import CardClip from "@/components/CardClip";
 
 export function generateStaticParams() {
   return SUBJECTS.map((s) => ({ subject: s.slug }));
@@ -18,6 +20,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
 
   const items = getSubjectItems(subjectSlug);
   const availableSkins = getAvailableCardSkins();
+  const showClips = hasClipAsset();
 
   return (
     <main className="page-shell">
@@ -34,6 +37,8 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
           const seed = `${subjectSlug}/${item.slug}`;
           const skin = pickCardSkin(seed, availableSkins);
           const { rotation, offsetY } = jitterForSeed(seed);
+          const bookmarkCount = Object.values(item.bookmarkCounts).reduce((a, b) => a + b, 0);
+          const clips = showClips ? layoutClips(bookmarkCount) : [];
 
           return (
             <ItemCard
@@ -49,6 +54,9 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
                   : {}),
               }}
             >
+              {clips.map((c, ci) => (
+                <CardClip key={ci} angle={c.angle} offsetX={c.offsetX} offsetY={c.offsetY} zIndex={2 + ci} />
+              ))}
               <div className="item-card-top">
                 <h2>{item.name}</h2>
               </div>

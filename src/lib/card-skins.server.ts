@@ -50,3 +50,9 @@ export function pickCardSkin(seed: string, skins: CardSkin[]): CardSkin | null {
   const h = hashString(seed);
   return skins[h % skins.length];
 }
+
+const CLIP_PATH = path.join(CARD_SKINS_DIR, "clip.png");
+
+export function hasClipAsset(): boolean {
+  return fs.existsSync(CLIP_PATH);
+}
