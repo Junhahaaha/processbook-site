@@ -99,6 +99,11 @@ h3 {
   margin-bottom: 36px;
   text-align: center;
 }
+.subject-hint {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin: 6px 0 0;
+}
 
 /* -- card grid ------------------------------------------------------------
    Multi-column instead of grid rows: a ticket or business-card is much
@@ -117,6 +122,7 @@ h3 {
   width: 100%;
   margin: 0 0 16px;
   break-inside: avoid;
+  cursor: grab;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);

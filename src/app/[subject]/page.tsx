@@ -26,6 +26,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
           ← 전체 과목
         </Link>
         <h1>{subject.name}</h1>
+        <p className="subject-hint">드래그로 옮기기 · 더블클릭으로 열기</p>
       </header>
 
       <div className="card-grid">
