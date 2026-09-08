@@ -124,22 +124,16 @@ h3 {
   border-color: var(--line-strong);
 }
 
-/* -- randomly-skinned item cards (post-it / business card / ticket) -------*/
+/* -- randomly-skinned item cards (post-it / business card / ticket) -------
+   Each skin gets its own fixed text position/color matching that skin's
+   art (not a single universal overlay) — a ticket already has baked-in
+   text in its own spot, a post-it has a doodle in one corner, etc. */
 .item-card-skinned {
   position: relative;
-  justify-content: flex-end;
   border: none;
   box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.45);
   background-size: cover;
   background-position: center;
-  color: #fff;
-}
-.item-card-skinned::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.68) 0%, rgba(0, 0, 0, 0.2) 45%, transparent 72%);
 }
 .item-card-skinned:hover {
   border-color: transparent;
@@ -148,14 +142,58 @@ h3 {
   position: relative;
   z-index: 1;
 }
-.item-card-skinned h2 {
+
+/* post-it: doodle sits bottom-right in the reference art, so text goes
+   top-left on the plain paper area. Dark ink text (paper is light). */
+.item-card-skin-postit {
+  justify-content: flex-start;
+  padding: 20px;
+  color: var(--ink);
+}
+.item-card-skin-postit .item-card-category {
+  color: var(--ink-soft);
+}
+.item-card-skin-postit .status-badge {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: transparent;
+}
+
+/* business card: full-bleed abstract art with no guaranteed plain area,
+   so a bottom scrim keeps white text legible regardless of the art. */
+.item-card-skin-business-card {
+  justify-content: flex-end;
+  padding: 16px 18px;
   color: #fff;
 }
-.item-card-skinned .item-card-category {
+.item-card-skin-business-card::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 60%;
+  border-radius: inherit;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.62), transparent);
+}
+.item-card-skin-business-card .item-card-category {
   color: rgba(255, 255, 255, 0.85);
 }
-.item-card-skinned .status-badge {
+.item-card-skin-business-card .status-badge {
   background: rgba(255, 255, 255, 0.92);
+  border-color: transparent;
+}
+
+/* ticket: reference art has a QR code top-right and "1 way ticket / date"
+   baked in bottom-right, plus a perforated stub on the far left — text
+   goes center-left, clear of the stub and both baked elements. */
+.item-card-skin-ticket {
+  justify-content: center;
+  padding: 14px 20px 14px 42px;
+  color: var(--ink);
+}
+.item-card-skin-ticket .item-card-category {
+  color: var(--ink-soft);
+}
+.item-card-skin-ticket .status-badge {
+  background: rgba(255, 255, 255, 0.85);
   border-color: transparent;
 }
 .subject-card-code {

@@ -37,7 +37,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
             <Link
               key={item.slug}
               href={`/${subjectSlug}/${item.slug}`}
-              className={`item-card ${hasSkin ? "item-card-skinned" : ""}`}
+              className={`item-card ${hasSkin ? `item-card-skinned item-card-skin-${skin.id}` : ""}`}
               style={
                 hasSkin
                   ? { aspectRatio: skin.ratio, backgroundImage: `url(/card-skins/${skin.file})` }
