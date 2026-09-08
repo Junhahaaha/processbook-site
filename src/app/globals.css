@@ -631,8 +631,183 @@ h3 {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)) brightness(1.1);
 }
 
+/* -- 3D notebook landing --------------------------------------------------*/
+.page-shell-notebook {
+  max-width: 1000px;
+}
+.notebook-landing {
+  position: relative;
+}
+.notebook-canvas-wrap {
+  position: relative;
+  height: 480px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, var(--surface-soft), var(--bg));
+  border: 1px solid var(--line);
+  touch-action: none;
+  cursor: grab;
+}
+.notebook-canvas-wrap:active {
+  cursor: grabbing;
+}
+.notebook-landing-loading {
+  height: 480px;
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+.notebook-labels {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.notebook-label {
+  pointer-events: auto;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.notebook-label.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.notebook-back {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.notebook-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+
+/* -- password gate (notebook page look) ------------------------------------*/
+.password-gate-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 9, 6, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+.password-gate-page {
+  width: 100%;
+  max-width: 320px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--surface) 0px,
+    var(--surface) 27px,
+    var(--line) 28px
+  );
+  border-radius: 10px;
+  box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.5);
+  padding: 32px 28px 28px;
+  position: relative;
+  text-align: center;
+  font-family: var(--font-serif), serif;
+}
+.password-gate-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  line-height: 1;
+}
+.password-gate-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+.password-gate-hint {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0 0 16px;
+}
+.password-gate-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.password-gate-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-strong);
+}
+.password-gate-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.password-gate-error {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 12.5px;
+  color: var(--open, #b5651d);
+  height: 16px;
+  margin: 0 0 10px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.password-gate-error.visible {
+  opacity: 1;
+}
+.password-gate-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.password-gate-key {
+  font-family: var(--font-sans), sans-serif;
+  font-size: 16px;
+  padding: 12px 0;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+}
+.password-gate-key:disabled {
+  visibility: hidden;
+}
+.password-gate-key:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
 @media (max-width: 640px) {
   .page-shell {
     padding: 40px 16px 100px;
+  }
+  .notebook-canvas-wrap {
+    height: 380px;
   }
 }
