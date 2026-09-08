@@ -9,12 +9,13 @@ import BookmarkTab, { layoutBookmarks } from "./BookmarkTab";
 import type { NotebookSubjectData } from "./types";
 
 const ACCENTS = ["#2f5d50", "#3f7cc0", "#c0563f", "#8a5fc7"];
+export const RADIUS = 2.3;
+const FOCUS_PUSH = 2.3;
 
 export default function Notebook({
   subject,
   index,
-  activeIndex,
-  dragOffsetRef,
+  slotAngle,
   isFocused,
   anyFocused,
   onSelect,
@@ -22,36 +23,30 @@ export default function Notebook({
 }: {
   subject: NotebookSubjectData;
   index: number;
-  activeIndex: number;
-  dragOffsetRef: React.RefObject<number>;
+  slotAngle: number;
   isFocused: boolean;
   anyFocused: boolean;
   onSelect: (index: number) => void;
   onOpenPassword: (slug: string) => void;
 }) {
-  const group = useRef<THREE.Group>(null);
-  const [rotating, setRotating] = useState(false);
-  const rotation = useRef({ x: 0, y: 0 });
-  const dragStart = useRef<{ x: number; y: number } | null>(null);
+  const radial = useRef<THREE.Group>(null);
+  const examine = useRef<THREE.Group>(null);
+  const examineRotation = useRef({ x: 0, y: 0 });
+  const dragStart = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const [playSignal, setPlaySignal] = useState(0);
 
   const bookmarks = layoutBookmarks(subject.bookmarkColors.length);
 
   useFrame(() => {
-    const g = group.current;
+    const g = radial.current;
     if (!g) return;
 
-    const relative = index - activeIndex - dragOffsetRef.current;
-
-    const targetZ = isFocused ? 1.6 : 0;
-    const targetScale = isFocused ? 1.35 : anyFocused ? 0.65 : 1;
-    const targetTiltY = isFocused ? rotation.current.y : THREE.MathUtils.clamp(relative * 0.5, -0.7, 0.7);
-    const targetTiltX = isFocused ? rotation.current.x : 0;
-    const targetOpacity = anyFocused && !isFocused ? 0.2 : 1;
+    const targetZ = isFocused ? RADIUS + FOCUS_PUSH : RADIUS;
+    const targetScale = isFocused ? 1.3 : anyFocused ? 0.7 : 1;
+    const targetOpacity = anyFocused && !isFocused ? 0.15 : 1;
 
     g.position.z += (targetZ - g.position.z) * 0.15;
     g.scale.setScalar(g.scale.x + (targetScale - g.scale.x) * 0.15);
-    g.rotation.y += (targetTiltY - g.rotation.y) * 0.15;
-    g.rotation.x += (targetTiltX - g.rotation.x) * 0.15;
 
     g.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -64,12 +59,27 @@ export default function Notebook({
         }
       }
     });
+
+    const ex = examine.current;
+    if (ex) {
+      const targetY = isFocused ? examineRotation.current.y : 0;
+      const targetX = isFocused ? examineRotation.current.x : 0;
+      ex.rotation.y += (targetY - ex.rotation.y) * 0.15;
+      ex.rotation.x += (targetX - ex.rotation.x) * 0.15;
+    }
   });
 
   function handleClick(e: ThreeEvent<MouseEvent>) {
     e.stopPropagation();
-    if (anyFocused && !isFocused) return; // clicking a background note while one is focused: ignore
-    onSelect(index);
+    if (dragStart.current?.moved) return; // a drag-to-examine gesture, not a click
+    if (anyFocused && !isFocused) return;
+    if (isFocused) {
+      // click on the already-focused note: play its animation once (ignored
+      // while already running — see NotebookModel).
+      setPlaySignal((c) => c + 1);
+    } else {
+      onSelect(index);
+    }
   }
 
   function handleDoubleClick(e: ThreeEvent<MouseEvent>) {
@@ -81,8 +91,7 @@ export default function Notebook({
   function handlePointerDown(e: ThreeEvent<PointerEvent>) {
     if (!isFocused) return;
     e.stopPropagation();
-    dragStart.current = { x: e.clientX, y: e.clientY };
-    setRotating(true);
+    dragStart.current = { x: e.clientX, y: e.clientY, moved: false };
     (e.target as Element).setPointerCapture?.(e.pointerId);
   }
 
@@ -90,39 +99,43 @@ export default function Notebook({
     if (!isFocused || !dragStart.current) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    rotation.current.y += dx * 0.01;
-    rotation.current.x = THREE.MathUtils.clamp(rotation.current.x + dy * 0.01, -0.6, 0.6);
-    dragStart.current = { x: e.clientX, y: e.clientY };
+    if (Math.abs(dx) + Math.abs(dy) > 3) dragStart.current.moved = true;
+    examineRotation.current.y += dx * 0.01;
+    examineRotation.current.x = THREE.MathUtils.clamp(examineRotation.current.x + dy * 0.01, -0.5, 0.5);
+    dragStart.current.x = e.clientX;
+    dragStart.current.y = e.clientY;
   }
 
   function handlePointerUp() {
     dragStart.current = null;
-    setRotating(false);
   }
 
   const accent = ACCENTS[index % ACCENTS.length];
 
   return (
-    <group
-      ref={group}
-      position={[index * 2.6, 0, 0]}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-    >
-      {subject.modelPath ? (
-        <Suspense fallback={<NotebookPlaceholder accent={accent} />}>
-          <NotebookModel path={subject.modelPath} dragging={rotating} />
-        </Suspense>
-      ) : (
-        <NotebookPlaceholder accent={accent} />
-      )}
-      {bookmarks.map((b, i) => (
-        <BookmarkTab key={i} color={subject.bookmarkColors[i]} offsetY={b.offsetY} angle={b.angle} />
-      ))}
+    <group rotation={[0, slotAngle, 0]}>
+      <group ref={radial} position={[0, 0, RADIUS]}>
+        <group
+          ref={examine}
+          onClick={handleClick}
+          onDoubleClick={handleDoubleClick}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+        >
+          {subject.modelPath ? (
+            <Suspense fallback={<NotebookPlaceholder accent={accent} />}>
+              <NotebookModel path={subject.modelPath} playSignal={playSignal} isFocused={isFocused} />
+            </Suspense>
+          ) : (
+            <NotebookPlaceholder accent={accent} />
+          )}
+          {bookmarks.map((b, i) => (
+            <BookmarkTab key={i} color={subject.bookmarkColors[i]} offsetY={b.offsetY} angle={b.angle} />
+          ))}
+        </group>
+      </group>
     </group>
   );
 }

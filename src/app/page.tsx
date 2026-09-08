@@ -23,13 +23,7 @@ export default function HomePage() {
   });
 
   return (
-    <main className="page-shell page-shell-notebook">
-      <header className="home-header">
-        <p className="eyebrow">Process Book</p>
-        <h1>이번 학기 작업 기록</h1>
-        <p className="home-sub">노트를 드래그해서 넘겨보고, 클릭해서 가까이 살펴보세요.</p>
-      </header>
-
+    <main className="home-notebook-stage">
       <NotebookLandingLoader subjects={notebookSubjects} />
     </main>
   );

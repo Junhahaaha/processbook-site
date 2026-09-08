@@ -61,7 +61,8 @@ a {
 h1,
 h2,
 h3 {
-  font-family: var(--font-serif), serif;
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
 
@@ -632,19 +633,20 @@ h3 {
 }
 
 /* -- 3D notebook landing --------------------------------------------------*/
-.page-shell-notebook {
-  max-width: 1000px;
+.home-notebook-stage {
+  height: 100vh;
+  min-height: 560px;
+  display: flex;
+  overflow: hidden;
 }
 .notebook-landing {
   position: relative;
+  flex: 1;
 }
 .notebook-canvas-wrap {
   position: relative;
-  height: 480px;
-  border-radius: var(--radius);
-  overflow: hidden;
-  background: radial-gradient(circle at 50% 30%, var(--surface-soft), var(--bg));
-  border: 1px solid var(--line);
+  height: 100%;
+  width: 100%;
   touch-action: none;
   cursor: grab;
 }
@@ -652,35 +654,8 @@ h3 {
   cursor: grabbing;
 }
 .notebook-landing-loading {
-  height: 480px;
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-}
-.notebook-labels {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 18px;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  pointer-events: none;
-}
-.notebook-label {
-  pointer-events: auto;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.notebook-label.active {
-  color: var(--accent);
-  border-color: var(--accent);
+  height: 100%;
+  background: var(--bg);
 }
 .notebook-back {
   position: absolute;
@@ -730,7 +705,7 @@ h3 {
   padding: 32px 28px 28px;
   position: relative;
   text-align: center;
-  font-family: var(--font-serif), serif;
+  font-family: var(--font-sans), sans-serif;
 }
 .password-gate-close {
   position: absolute;
@@ -807,7 +782,8 @@ h3 {
   .page-shell {
     padding: 40px 16px 100px;
   }
-  .notebook-canvas-wrap {
-    height: 380px;
+  .home-notebook-stage {
+    height: 100svh;
+    min-height: 480px;
   }
 }
