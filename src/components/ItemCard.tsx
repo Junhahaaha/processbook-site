@@ -135,10 +135,13 @@ export default function ItemCard({
     <a
       ref={ref}
       href={href}
+      draggable={false}
       className={className}
       style={{
         ...style,
         touchAction: "none",
+        userSelect: "none",
+        WebkitUserSelect: "none",
         transform: settled ? `rotate(${baseRotation}deg)` : "rotate(0deg) scale(0.9) translateY(10px)",
         opacity: settled ? 1 : 0,
         transitionProperty: "transform, opacity",
@@ -146,6 +149,7 @@ export default function ItemCard({
         transitionTimingFunction: entranceDone ? "ease-out" : "cubic-bezier(0.34, 1.56, 0.64, 1)",
       }}
       onTransitionEnd={handleTransitionEnd}
+      onDragStart={(e) => e.preventDefault()}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
