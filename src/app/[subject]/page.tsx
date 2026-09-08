@@ -6,7 +6,6 @@ import { getAvailableCardSkins, hasClipAsset, pickCardSkin } from "@/lib/card-sk
 import { jitterForSeed } from "@/lib/jitter";
 import { layoutClips } from "@/lib/clip-layout";
 import ItemCard from "@/components/ItemCard";
-import BookmarkCounts from "@/components/BookmarkCounts";
 import CardClip from "@/components/CardClip";
 
 export function generateStaticParams() {
@@ -37,8 +36,10 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
           const seed = `${subjectSlug}/${item.slug}`;
           const skin = pickCardSkin(seed, availableSkins);
           const { rotation, offsetY } = jitterForSeed(seed);
-          const bookmarkCount = Object.values(item.bookmarkCounts).reduce((a, b) => a + b, 0);
-          const clips = showClips ? layoutClips(bookmarkCount) : [];
+          const bookmarkColors = Object.entries(item.bookmarkCounts).flatMap(([color, count]) =>
+            Array.from({ length: count }, () => color)
+          );
+          const clips = showClips ? layoutClips(bookmarkColors.length) : [];
 
           return (
             <ItemCard
@@ -55,12 +56,11 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
               }}
             >
               {clips.map((c, ci) => (
-                <CardClip key={ci} angle={c.angle} offsetX={c.offsetX} offsetY={c.offsetY} zIndex={2 + ci} />
+                <CardClip key={ci} color={bookmarkColors[ci]} offsetX={c.offsetX} zIndex={2 + ci} />
               ))}
               <div className="item-card-top">
                 <h2>{item.name}</h2>
               </div>
-              <BookmarkCounts counts={item.bookmarkCounts} />
             </ItemCard>
           );
         })}

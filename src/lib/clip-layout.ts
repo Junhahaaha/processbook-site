@@ -1,13 +1,8 @@
-// Stack layout for the paperclip(s) pinched onto a card's corner — one per
-// feedback bookmark the item has, fanned out at slightly different angles
-// and offsets so a stack of several reads as distinct clips, not one blob.
-const GOLDEN_ANGLE = 0.61803398875;
+// Horizontal layout for the paperclip(s) pinched along a card's top edge —
+// one per feedback bookmark, side by side (not stacked/rotated — a
+// downward diagonal cascade read as awkward).
+const SPACING = 26; // px between clip centers
 
 export function layoutClips(count: number) {
-  return Array.from({ length: count }, (_, i) => {
-    const angle = -16 + ((i * GOLDEN_ANGLE) % 1) * 32; // -16..16 deg
-    const offsetX = i * 5;
-    const offsetY = i * 4;
-    return { angle, offsetX, offsetY };
-  });
+  return Array.from({ length: count }, (_, i) => ({ offsetX: i * SPACING }));
 }

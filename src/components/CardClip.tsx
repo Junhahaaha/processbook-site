@@ -1,22 +1,18 @@
 export default function CardClip({
-  angle,
+  color,
   offsetX,
-  offsetY,
   zIndex,
 }: {
-  angle: number;
+  color: string;
   offsetX: number;
-  offsetY: number;
   zIndex: number;
 }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src="/card-skins/clip.png"
-      alt=""
+    <div
       className="card-clip"
       style={{
-        transform: `translate(${offsetX}px, ${offsetY}px) rotate(${angle}deg)`,
+        transform: `translateX(${offsetX}px)`,
+        backgroundColor: color,
         zIndex,
       }}
     />

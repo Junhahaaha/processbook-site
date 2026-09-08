@@ -134,19 +134,29 @@ h3 {
   border-color: var(--line-strong);
 }
 
-/* paperclip(s) pinched onto the corner of any card with feedback bookmarks.
-   clip.png is 81x202; the pinch point (where it should land on the card's
-   top edge) sits ~80px down from the top of that source image, i.e. at
-   (80/81) of the rendered width — top offset is negative that amount so
-   the pinch point lands at y=0 on the card. */
+/* paperclip(s) pinched along the top edge of any card with feedback
+   bookmarks, one per bookmark, side by side (see layoutClips). Recolored
+   per-bookmark to match its feedback color via mask-image (clip.png's
+   alpha channel as the shape, filled with backgroundColor) rather than
+   tinting an <img>. clip.png is 81x202; the pinch point sits ~80px down
+   from the top of that source, i.e. (80/81) of the rendered width — top
+   offset is negative that amount so the pinch point lands at y=0. */
 .card-clip {
   position: absolute;
-  top: -47px;
+  top: -40px;
   left: -12px;
-  width: 48px;
-  height: auto;
+  width: 40px;
+  height: 100px;
+  -webkit-mask-image: url(/card-skins/clip.png);
+  mask-image: url(/card-skins/clip.png);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
   pointer-events: none;
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.3));
 }
 
 /* -- randomly-skinned item cards (post-it / business card / ticket) -------
@@ -224,18 +234,6 @@ h3 {
 .empty-state {
   color: var(--ink-faint);
   font-size: 14px;
-}
-
-/* -- bookmark counts (card badge) -----------------------------------------*/
-.bookmark-counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 2px;
-}
-.bookmark-count-chip {
-  font-size: 11.5px;
-  font-weight: 600;
 }
 
 /* -- item detail page ------------------------------------------------------*/
