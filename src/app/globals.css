@@ -141,7 +141,7 @@ h3 {
    tinting an <img>. clip.png is 81x202; the pinch point sits ~80px down
    from the top of that source, i.e. (80/81) of the rendered width — top
    offset is negative that amount so the pinch point lands at y=0. */
-.card-clip {
+.item-card .card-clip {
   position: absolute;
   top: -40px;
   left: -12px;
