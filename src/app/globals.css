@@ -186,15 +186,27 @@ h3 {
   border-color: transparent;
 }
 
-/* ticket: reference art has a QR code top-right and "1 way ticket / date"
-   baked in bottom-right, plus a perforated stub on the far left — text
-   goes center-left, clear of the stub and both baked elements. */
+/* ticket: center-left, clear of a typical stub/QR/printed-detail layout.
+   Different ticket variants pack their own art quite differently though
+   (see ticket-01 vs ticket-02), so title/category get their own backdrop
+   chip rather than sitting directly on the art — legible no matter what's
+   underneath. */
 .item-card-skin-ticket {
   justify-content: center;
   padding: 14px 20px 14px 42px;
   color: var(--ink);
 }
+.item-card-skin-ticket .item-card-top,
 .item-card-skin-ticket .item-card-category {
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 6px;
+  width: fit-content;
+}
+.item-card-skin-ticket .item-card-top {
+  padding: 4px 8px;
+}
+.item-card-skin-ticket .item-card-category {
+  padding: 2px 8px;
   color: var(--ink-soft);
 }
 .item-card-skin-ticket .status-badge {
