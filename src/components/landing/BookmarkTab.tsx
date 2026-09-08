@@ -24,7 +24,7 @@ export default function BookmarkTab({
 }) {
   const texture = useTexture(BOOKMARK_TEXTURES[variant % BOOKMARK_TEXTURES.length]);
   return (
-    <mesh position={[offsetX, 0.96, 0.03]} rotation={[0, 0, angle]}>
+    <mesh position={[offsetX, 1.16, 0.03]} rotation={[0, 0, angle]}>
       <planeGeometry args={[0.24, 0.42]} />
       <meshStandardMaterial map={texture} color={color} transparent side={THREE.DoubleSide} />
     </mesh>
