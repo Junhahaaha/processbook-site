@@ -204,9 +204,17 @@ export default function Notebook({
             ) : (
               <NotebookPlaceholder accent={accent} />
             )}
-            {bookmarks.map((b, i) => (
-              <BookmarkTab key={i} color={subject.bookmarkColors[i]} offsetX={b.offsetX} angle={b.angle} />
-            ))}
+            <Suspense fallback={null}>
+              {bookmarks.map((b, i) => (
+                <BookmarkTab
+                  key={i}
+                  color={subject.bookmarkColors[i]}
+                  offsetX={b.offsetX}
+                  angle={b.angle}
+                  variant={b.variant}
+                />
+              ))}
+            </Suspense>
           </group>
         </group>
       </group>

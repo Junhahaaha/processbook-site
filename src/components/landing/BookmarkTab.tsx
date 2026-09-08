@@ -1,18 +1,32 @@
 import * as THREE from "three";
+import { useTexture } from "@react-three/drei";
+
+// Cycled by index so a book with several feedback bookmarks shows a mix of
+// shapes rather than one repeated tile. White-on-transparent source art
+// tints cleanly via the material's `color` (multiply blend) — see
+// public/models/bookmarks/.
+const BOOKMARK_TEXTURES = [
+  "/models/bookmarks/bookmark-01.png",
+  "/models/bookmarks/bookmark-02.png",
+  "/models/bookmarks/bookmark-03.png",
+];
 
 export default function BookmarkTab({
   color,
   offsetX,
   angle,
+  variant,
 }: {
   color: string;
   offsetX: number;
   angle: number;
+  variant: number;
 }) {
+  const texture = useTexture(BOOKMARK_TEXTURES[variant % BOOKMARK_TEXTURES.length]);
   return (
     <mesh position={[offsetX, 0.96, 0.03]} rotation={[0, 0, angle]}>
       <planeGeometry args={[0.24, 0.42]} />
-      <meshStandardMaterial color={color} side={THREE.DoubleSide} />
+      <meshStandardMaterial map={texture} color={color} transparent side={THREE.DoubleSide} />
     </mesh>
   );
 }
@@ -30,6 +44,6 @@ export function layoutBookmarks(count: number) {
     const t = count === 1 ? 0.5 : i / (count - 1);
     const offsetX = MIN_X + t * (MAX_X - MIN_X);
     const angle = (((i * goldenAngle) % 1) - 0.5) * 0.25; // ~±0.125 rad
-    return { offsetX, angle };
+    return { offsetX, angle, variant: i % BOOKMARK_TEXTURES.length };
   });
 }
