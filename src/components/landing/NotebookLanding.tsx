@@ -4,7 +4,7 @@ import { useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas } from "@react-three/fiber";
 import Notebook from "./Notebook";
-import TurntableGroup from "./TurntableGroup";
+import TurntableGroup, { type DragState } from "./TurntableGroup";
 import PasswordGate from "./PasswordGate";
 import type { NotebookSubjectData } from "./types";
 
@@ -29,43 +29,47 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
   const router = useRouter();
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [passwordSlug, setPasswordSlug] = useState<string | null>(null);
-  const rotationTargetRef = useRef(0);
+  const currentAngleRef = useRef(0);
   const angularVelocityRef = useRef(0);
+  const dragStateRef = useRef<DragState>({ active: false, liveAngle: 0 });
+  const forcedTargetRef = useRef<number | null>(null);
   const dragMovedRef = useRef(false);
-  const dragStart = useRef<{ x: number; startRotation: number } | null>(null);
+  const dragAnchor = useRef<{ x: number; startAngle: number } | null>(null);
 
   const slotAngle = (i: number) => (i * TWO_PI) / subjects.length;
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (focusedIndex !== null) return;
-      dragStart.current = { x: e.clientX, startRotation: rotationTargetRef.current };
+      dragAnchor.current = { x: e.clientX, startAngle: currentAngleRef.current };
       dragMovedRef.current = false;
+      dragStateRef.current.active = true;
+      dragStateRef.current.liveAngle = currentAngleRef.current;
     },
     [focusedIndex]
   );
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragStart.current) return;
-    const dx = e.clientX - dragStart.current.x;
+    if (!dragAnchor.current) return;
+    const dx = e.clientX - dragAnchor.current.x;
     if (Math.abs(dx) > 5) dragMovedRef.current = true;
-    rotationTargetRef.current = dragStart.current.startRotation + dx * DRAG_SENSITIVITY;
+    dragStateRef.current.liveAngle = dragAnchor.current.startAngle + dx * DRAG_SENSITIVITY;
   }, []);
 
   const endDrag = useCallback(() => {
-    if (!dragStart.current) return;
-    dragStart.current = null;
-    const step = TWO_PI / subjects.length;
-    rotationTargetRef.current = Math.round(rotationTargetRef.current / step) * step;
-  }, [subjects.length]);
+    if (!dragAnchor.current) return;
+    dragAnchor.current = null;
+    dragStateRef.current.active = false;
+    // No explicit snap here — TurntableGroup's spring settles to the
+    // nearest slot on its own, carrying over whatever velocity the drag
+    // ended with (see request: gradual, not sudden, stop).
+  }, []);
 
-  const handleSelect = useCallback(
-    (index: number) => {
-      rotationTargetRef.current = frontFacingTarget(rotationTargetRef.current, slotAngle(index));
-      setFocusedIndex(index);
-    },
-    [subjects.length] // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const handleSelect = useCallback((index: number) => {
+    forcedTargetRef.current = frontFacingTarget(currentAngleRef.current, slotAngle(index));
+    setFocusedIndex(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleUnfocus = useCallback(() => {
     setFocusedIndex(null);
@@ -92,7 +96,13 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
           <hemisphereLight args={["#fffaf0", "#3d3527", 0.6]} />
           <directionalLight position={[4, 5, 6]} intensity={1.9} />
           <directionalLight position={[-4, -2, 3]} intensity={0.45} />
-          <TurntableGroup targetRef={rotationTargetRef} velocityRef={angularVelocityRef}>
+          <TurntableGroup
+            count={subjects.length}
+            dragStateRef={dragStateRef}
+            forcedTargetRef={forcedTargetRef}
+            velocityRef={angularVelocityRef}
+            currentAngleRef={currentAngleRef}
+          >
             {subjects.map((subject, i) => (
               <Notebook
                 key={subject.slug}

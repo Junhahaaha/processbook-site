@@ -678,6 +678,7 @@ h3 {
   justify-content: center;
   z-index: 200;
   padding: 24px;
+  animation: password-gate-fade 0.25s ease-out;
 }
 .password-gate-page {
   width: 100%;
@@ -694,6 +695,18 @@ h3 {
   position: relative;
   text-align: center;
   font-family: var(--font-sans), sans-serif;
+  animation: password-gate-rise 0.38s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes password-gate-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes password-gate-rise {
+  from {
+    transform: translateY(60px);
+    opacity: 0;
+  }
 }
 .password-gate-close {
   position: absolute;

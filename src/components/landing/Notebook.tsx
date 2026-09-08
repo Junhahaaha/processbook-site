@@ -6,11 +6,22 @@ import * as THREE from "three";
 import NotebookPlaceholder from "./NotebookPlaceholder";
 import NotebookModel from "./NotebookModel";
 import BookmarkTab, { layoutBookmarks } from "./BookmarkTab";
+import { springStep } from "./spring";
 import type { NotebookSubjectData } from "./types";
 
 const ACCENTS = ["#2f5d50", "#3f7cc0", "#c0563f", "#8a5fc7"];
 export const RADIUS = 2.3;
 const FOCUS_PUSH = 1.4;
+const MAX_DT = 0.05;
+
+// Underdamped so the lean overshoots 0 and settles with a little sway
+// ("반동의 영향으로 살짝 왔다 갔다") instead of a flat lerp back to rest.
+const TILT_STIFFNESS = 140;
+const TILT_DAMPING = 9;
+
+// Pure damped coast (no restoring spring) for the free-look drag rotation —
+// it should keep drifting a bit after release, not freeze in place.
+const EXAMINE_DECAY = 4.5;
 
 export default function Notebook({
   subject,
@@ -37,12 +48,15 @@ export default function Notebook({
   const tilt = useRef<THREE.Group>(null);
   const examine = useRef<THREE.Group>(null);
   const examineRotation = useRef({ x: 0, y: 0 });
-  const dragStart = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const examineVelocity = useRef({ x: 0, y: 0 });
+  const tiltState = useRef({ value: 0, velocity: 0 });
+  const dragStart = useRef<{ x: number; y: number; moved: boolean; lastTime: number } | null>(null);
   const [playSignal, setPlaySignal] = useState(0);
 
   const bookmarks = layoutBookmarks(subject.bookmarkColors.length);
 
-  useFrame(() => {
+  useFrame((_, rawDt) => {
+    const dt = Math.min(rawDt, MAX_DT);
     const g = radial.current;
     if (!g) return;
 
@@ -67,20 +81,45 @@ export default function Notebook({
 
     const ex = examine.current;
     if (ex) {
-      const targetY = isFocused ? examineRotation.current.y : 0;
-      const targetX = isFocused ? examineRotation.current.x : 0;
-      ex.rotation.y += (targetY - ex.rotation.y) * 0.15;
-      ex.rotation.x += (targetX - ex.rotation.x) * 0.15;
+      if (!isFocused) {
+        examineRotation.current.y += (0 - examineRotation.current.y) * 0.2;
+        examineRotation.current.x += (0 - examineRotation.current.x) * 0.2;
+        examineVelocity.current.y = 0;
+        examineVelocity.current.x = 0;
+      } else if (!dragStart.current) {
+        // released mid-air: keep drifting on the last drag velocity, decaying
+        // smoothly instead of stopping dead the instant the pointer lifts.
+        const decay = Math.exp(-EXAMINE_DECAY * dt);
+        examineVelocity.current.y *= decay;
+        examineVelocity.current.x *= decay;
+        examineRotation.current.y += examineVelocity.current.y * dt;
+        examineRotation.current.x = THREE.MathUtils.clamp(
+          examineRotation.current.x + examineVelocity.current.x * dt,
+          -0.5,
+          0.5
+        );
+      }
+      ex.rotation.y = examineRotation.current.y;
+      ex.rotation.x = examineRotation.current.x;
     }
 
     const tl = tilt.current;
     if (tl) {
-      // Lean into the spin a little so the ring feels physical rather than
-      // rigidly locked, e.g. books settle back to 0 when the turntable stops.
+      // Lean into the spin so the ring feels physical rather than rigidly
+      // locked; settling back to flat gets a small springy overshoot.
       const targetTilt = isFocused
         ? 0
         : THREE.MathUtils.clamp(-velocityRef.current * 0.18, -0.3, 0.3);
-      tl.rotation.z += (targetTilt - tl.rotation.z) * 0.15;
+      const stepped = springStep(
+        tiltState.current.value,
+        tiltState.current.velocity,
+        targetTilt,
+        TILT_STIFFNESS,
+        TILT_DAMPING,
+        dt
+      );
+      tiltState.current = stepped;
+      tl.rotation.z = stepped.value;
     }
   });
 
@@ -103,7 +142,9 @@ export default function Notebook({
   function handlePointerDown(e: ThreeEvent<PointerEvent>) {
     if (!isFocused) return;
     e.stopPropagation();
-    dragStart.current = { x: e.clientX, y: e.clientY, moved: false };
+    dragStart.current = { x: e.clientX, y: e.clientY, moved: false, lastTime: performance.now() };
+    examineVelocity.current.x = 0;
+    examineVelocity.current.y = 0;
     (e.target as Element).setPointerCapture?.(e.pointerId);
   }
 
@@ -117,10 +158,24 @@ export default function Notebook({
       // (ignored while already running — see NotebookModel).
       setPlaySignal((c) => c + 1);
     }
-    examineRotation.current.y += dx * 0.01;
-    examineRotation.current.x = THREE.MathUtils.clamp(examineRotation.current.x + dy * 0.01, -0.5, 0.5);
+
+    const now = performance.now();
+    const dt = Math.max((now - dragStart.current.lastTime) / 1000, 1 / 120);
+    const deltaY = dx * 0.01;
+    const deltaX = dy * 0.01;
+    examineRotation.current.y += deltaY;
+    examineRotation.current.x = THREE.MathUtils.clamp(examineRotation.current.x + deltaX, -0.5, 0.5);
+    // smoothed, clamped velocity estimate, used to keep drifting after
+    // release — clamped so one huge jump between samples can't produce a
+    // multi-second coast.
+    const rawVy = THREE.MathUtils.clamp(deltaY / dt, -8, 8);
+    const rawVx = THREE.MathUtils.clamp(deltaX / dt, -8, 8);
+    examineVelocity.current.y += (rawVy - examineVelocity.current.y) * 0.5;
+    examineVelocity.current.x += (rawVx - examineVelocity.current.x) * 0.5;
+
     dragStart.current.x = e.clientX;
     dragStart.current.y = e.clientY;
+    dragStart.current.lastTime = now;
   }
 
   function handlePointerUp() {

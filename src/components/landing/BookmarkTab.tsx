@@ -19,14 +19,16 @@ export default function BookmarkTab({
 
 // Deterministic per-index spread so bookmarks fan out at different angles
 // along the top edge instead of stacking identically (spec: "서로 다른 각도로
-// 책에 꽂혀있음").
+// 책에 꽂혀있음"). Kept clear of the left edge, where the spine/rings are.
+const MIN_X = -0.15;
+const MAX_X = 0.55;
+
 export function layoutBookmarks(count: number) {
   if (count === 0) return [];
-  const range = 1.1; // horizontal spread along the top edge
   const goldenAngle = 0.61803398875;
   return Array.from({ length: count }, (_, i) => {
     const t = count === 1 ? 0.5 : i / (count - 1);
-    const offsetX = t * range - range / 2;
+    const offsetX = MIN_X + t * (MAX_X - MIN_X);
     const angle = (((i * goldenAngle) % 1) - 0.5) * 0.25; // ~±0.125 rad
     return { offsetX, angle };
   });
