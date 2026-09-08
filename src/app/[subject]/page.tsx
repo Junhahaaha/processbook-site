@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSubject, SUBJECTS } from "@/lib/subjects";
 import { getSubjectItems } from "@/lib/content.server";
-import ProgressBar from "@/components/ProgressBar";
 import StatusBadge from "@/components/StatusBadge";
 import BookmarkCounts from "@/components/BookmarkCounts";
 
@@ -23,7 +22,6 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
         <Link href="/" className="back-link">
           ← 전체 과목
         </Link>
-        <p className="eyebrow">{subject.code}</p>
         <h1>{subject.name}</h1>
       </header>
 
@@ -35,7 +33,6 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
               <StatusBadge status={item.status} />
             </div>
             {item.category && <p className="item-card-category">{item.category}</p>}
-            <ProgressBar percent={item.progressPercent} compact />
             <BookmarkCounts counts={item.bookmarkCounts} />
           </Link>
         ))}

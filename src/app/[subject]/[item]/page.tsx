@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { getSubject } from "@/lib/subjects";
 import { getAllItemSlugs, getItemDetail } from "@/lib/content.server";
 import { extractLinkCardUrls, fetchLinkMetaMap } from "@/lib/link-meta.server";
-import ProgressBar from "@/components/ProgressBar";
 import StatusBadge from "@/components/StatusBadge";
 import ProcessMarkdown from "@/components/markdown/ProcessMarkdown";
 import BookmarkDock from "@/components/bookmark/BookmarkDock";
@@ -46,7 +45,6 @@ export default async function ItemPage({
           <h1>{item.name}</h1>
           <StatusBadge status={item.status} />
         </div>
-        {item.checklist.length > 0 && <ProgressBar percent={item.progressPercent} />}
       </header>
 
       <ProcessMarkdown
