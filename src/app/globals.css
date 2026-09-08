@@ -657,18 +657,6 @@ h3 {
   height: 100%;
   background: var(--bg);
 }
-.notebook-back {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  font-size: 13px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  background: var(--surface);
-  color: var(--ink-soft);
-  cursor: pointer;
-}
 .notebook-hint {
   position: absolute;
   left: 0;

@@ -10,7 +10,7 @@ import type { NotebookSubjectData } from "./types";
 
 const ACCENTS = ["#2f5d50", "#3f7cc0", "#c0563f", "#8a5fc7"];
 export const RADIUS = 2.3;
-const FOCUS_PUSH = 2.3;
+const FOCUS_PUSH = 1.4;
 
 export default function Notebook({
   subject,
@@ -18,6 +18,8 @@ export default function Notebook({
   slotAngle,
   isFocused,
   anyFocused,
+  velocityRef,
+  dragMovedRef,
   onSelect,
   onOpenPassword,
 }: {
@@ -26,10 +28,13 @@ export default function Notebook({
   slotAngle: number;
   isFocused: boolean;
   anyFocused: boolean;
+  velocityRef: React.RefObject<number>;
+  dragMovedRef: React.RefObject<boolean>;
   onSelect: (index: number) => void;
   onOpenPassword: (slug: string) => void;
 }) {
   const radial = useRef<THREE.Group>(null);
+  const tilt = useRef<THREE.Group>(null);
   const examine = useRef<THREE.Group>(null);
   const examineRotation = useRef({ x: 0, y: 0 });
   const dragStart = useRef<{ x: number; y: number; moved: boolean } | null>(null);
@@ -42,7 +47,7 @@ export default function Notebook({
     if (!g) return;
 
     const targetZ = isFocused ? RADIUS + FOCUS_PUSH : RADIUS;
-    const targetScale = isFocused ? 1.3 : anyFocused ? 0.7 : 1;
+    const targetScale = isFocused ? 1.05 : anyFocused ? 0.7 : 1;
     const targetOpacity = anyFocused && !isFocused ? 0.15 : 1;
 
     g.position.z += (targetZ - g.position.z) * 0.15;
@@ -67,17 +72,24 @@ export default function Notebook({
       ex.rotation.y += (targetY - ex.rotation.y) * 0.15;
       ex.rotation.x += (targetX - ex.rotation.x) * 0.15;
     }
+
+    const tl = tilt.current;
+    if (tl) {
+      // Lean into the spin a little so the ring feels physical rather than
+      // rigidly locked, e.g. books settle back to 0 when the turntable stops.
+      const targetTilt = isFocused
+        ? 0
+        : THREE.MathUtils.clamp(-velocityRef.current * 0.18, -0.3, 0.3);
+      tl.rotation.z += (targetTilt - tl.rotation.z) * 0.15;
+    }
   });
 
   function handleClick(e: ThreeEvent<MouseEvent>) {
     e.stopPropagation();
     if (dragStart.current?.moved) return; // a drag-to-examine gesture, not a click
     if (anyFocused && !isFocused) return;
-    if (isFocused) {
-      // click on the already-focused note: play its animation once (ignored
-      // while already running — see NotebookModel).
-      setPlaySignal((c) => c + 1);
-    } else {
+    if (!isFocused) {
+      if (dragMovedRef.current) return; // this was a carousel-slide drag, not a real click
       onSelect(index);
     }
   }
@@ -99,7 +111,12 @@ export default function Notebook({
     if (!isFocused || !dragStart.current) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    if (Math.abs(dx) + Math.abs(dy) > 3) dragStart.current.moved = true;
+    if (!dragStart.current.moved && Math.abs(dx) + Math.abs(dy) > 3) {
+      dragStart.current.moved = true;
+      // dragging to rotate the focused note plays its animation once
+      // (ignored while already running — see NotebookModel).
+      setPlaySignal((c) => c + 1);
+    }
     examineRotation.current.y += dx * 0.01;
     examineRotation.current.x = THREE.MathUtils.clamp(examineRotation.current.x + dy * 0.01, -0.5, 0.5);
     dragStart.current.x = e.clientX;
@@ -115,25 +132,27 @@ export default function Notebook({
   return (
     <group rotation={[0, slotAngle, 0]}>
       <group ref={radial} position={[0, 0, RADIUS]}>
-        <group
-          ref={examine}
-          onClick={handleClick}
-          onDoubleClick={handleDoubleClick}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
-        >
-          {subject.modelPath ? (
-            <Suspense fallback={<NotebookPlaceholder accent={accent} />}>
-              <NotebookModel path={subject.modelPath} playSignal={playSignal} isFocused={isFocused} />
-            </Suspense>
-          ) : (
-            <NotebookPlaceholder accent={accent} />
-          )}
-          {bookmarks.map((b, i) => (
-            <BookmarkTab key={i} color={subject.bookmarkColors[i]} offsetY={b.offsetY} angle={b.angle} />
-          ))}
+        <group ref={tilt}>
+          <group
+            ref={examine}
+            onClick={handleClick}
+            onDoubleClick={handleDoubleClick}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
+            {subject.modelPath ? (
+              <Suspense fallback={<NotebookPlaceholder accent={accent} />}>
+                <NotebookModel path={subject.modelPath} playSignal={playSignal} isFocused={isFocused} />
+              </Suspense>
+            ) : (
+              <NotebookPlaceholder accent={accent} />
+            )}
+            {bookmarks.map((b, i) => (
+              <BookmarkTab key={i} color={subject.bookmarkColors[i]} offsetX={b.offsetX} angle={b.angle} />
+            ))}
+          </group>
         </group>
       </group>
     </group>

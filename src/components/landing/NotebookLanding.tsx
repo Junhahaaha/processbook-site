@@ -30,6 +30,8 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [passwordSlug, setPasswordSlug] = useState<string | null>(null);
   const rotationTargetRef = useRef(0);
+  const angularVelocityRef = useRef(0);
+  const dragMovedRef = useRef(false);
   const dragStart = useRef<{ x: number; startRotation: number } | null>(null);
 
   const slotAngle = (i: number) => (i * TWO_PI) / subjects.length;
@@ -38,6 +40,7 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
     (e: React.PointerEvent) => {
       if (focusedIndex !== null) return;
       dragStart.current = { x: e.clientX, startRotation: rotationTargetRef.current };
+      dragMovedRef.current = false;
     },
     [focusedIndex]
   );
@@ -45,6 +48,7 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragStart.current) return;
     const dx = e.clientX - dragStart.current.x;
+    if (Math.abs(dx) > 5) dragMovedRef.current = true;
     rotationTargetRef.current = dragStart.current.startRotation + dx * DRAG_SENSITIVITY;
   }, []);
 
@@ -78,13 +82,17 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
       >
-        <Canvas camera={{ position: [0, 0, 7.5], fov: 42 }}>
-          <ambientLight intensity={1.6} />
-          <hemisphereLight args={["#fffaf0", "#3d3527", 1.1]} />
-          <directionalLight position={[3, 4, 5]} intensity={1.8} />
-          <directionalLight position={[-3, -1, 3]} intensity={0.8} />
-          <directionalLight position={[0, 2, -4]} intensity={0.5} />
-          <TurntableGroup targetRef={rotationTargetRef}>
+        <Canvas
+          camera={{ position: [0, 0, 7.5], fov: 42 }}
+          onPointerMissed={(e) => {
+            if (e.type === "click" && focusedIndex !== null) handleUnfocus();
+          }}
+        >
+          <ambientLight intensity={0.55} />
+          <hemisphereLight args={["#fffaf0", "#3d3527", 0.6]} />
+          <directionalLight position={[4, 5, 6]} intensity={1.9} />
+          <directionalLight position={[-4, -2, 3]} intensity={0.45} />
+          <TurntableGroup targetRef={rotationTargetRef} velocityRef={angularVelocityRef}>
             {subjects.map((subject, i) => (
               <Notebook
                 key={subject.slug}
@@ -93,6 +101,8 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
                 slotAngle={slotAngle(i)}
                 isFocused={focusedIndex === i}
                 anyFocused={focusedIndex !== null}
+                velocityRef={angularVelocityRef}
+                dragMovedRef={dragMovedRef}
                 onSelect={handleSelect}
                 onOpenPassword={setPasswordSlug}
               />
@@ -101,13 +111,7 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
         </Canvas>
 
         {focusedIndex !== null && (
-          <button className="notebook-back" onClick={handleUnfocus}>
-            ← 뒤로
-          </button>
-        )}
-
-        {focusedIndex !== null && (
-          <p className="notebook-hint">드래그로 회전 · 클릭으로 애니메이션 재생 · 더블클릭으로 열기</p>
+          <p className="notebook-hint">드래그로 회전(애니메이션 재생) · 빈 곳 클릭으로 뒤로 · 더블클릭으로 열기</p>
         )}
       </div>
 
