@@ -134,10 +134,14 @@ h3 {
   border-color: var(--line-strong);
 }
 
-/* paperclip(s) pinched onto the corner of any card with feedback bookmarks */
+/* paperclip(s) pinched onto the corner of any card with feedback bookmarks.
+   clip.png is 81x202; the pinch point (where it should land on the card's
+   top edge) sits ~80px down from the top of that source image, i.e. at
+   (80/81) of the rendered width — top offset is negative that amount so
+   the pinch point lands at y=0 on the card. */
 .card-clip {
   position: absolute;
-  top: -16px;
+  top: -47px;
   left: -12px;
   width: 48px;
   height: auto;
