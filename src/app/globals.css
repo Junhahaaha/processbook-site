@@ -225,6 +225,7 @@ h3 {
 /* -- item detail page ------------------------------------------------------*/
 .item-header {
   margin-bottom: 32px;
+  text-align: center;
 }
 .prose-content {
   font-size: 15.5px;
