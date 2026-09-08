@@ -210,27 +210,6 @@ h3 {
   font-size: 14px;
 }
 
-/* -- status badge ---------------------------------------------------------*/
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--line-strong);
-  color: var(--status-color, var(--ink-soft));
-}
-.status-badge::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--status-color, var(--ink-soft));
-}
-
 /* -- bookmark counts (card badge) -----------------------------------------*/
 .bookmark-counts {
   display: flex;
@@ -247,14 +226,6 @@ h3 {
 .item-header {
   margin-bottom: 32px;
 }
-.item-header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
 .prose-content {
   font-size: 15.5px;
 }
