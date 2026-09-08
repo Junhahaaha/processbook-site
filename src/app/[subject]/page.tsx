@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { getSubject, SUBJECTS } from "@/lib/subjects";
 import { getSubjectItems } from "@/lib/content.server";
 import { getAvailableCardSkins, pickCardSkin } from "@/lib/card-skins.server";
-import StatusBadge from "@/components/StatusBadge";
+import { jitterForSeed } from "@/lib/jitter";
+import ItemCard from "@/components/ItemCard";
 import BookmarkCounts from "@/components/BookmarkCounts";
 
 export function generateStaticParams() {
@@ -28,25 +29,30 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
       </header>
 
       <div className="card-grid">
-        {items.map((item) => {
-          const skin = pickCardSkin(`${subjectSlug}/${item.slug}`, availableSkins);
+        {items.map((item, i) => {
+          const seed = `${subjectSlug}/${item.slug}`;
+          const skin = pickCardSkin(seed, availableSkins);
+          const { rotation, offsetY } = jitterForSeed(seed);
 
           return (
-            <Link
+            <ItemCard
               key={item.slug}
               href={`/${subjectSlug}/${item.slug}`}
               className={`item-card ${skin ? `item-card-skinned item-card-skin-${skin.type}` : ""}`}
-              style={
-                skin ? { aspectRatio: skin.ratio, backgroundImage: `url(/card-skins/${skin.file})` } : undefined
-              }
+              baseRotation={rotation}
+              entranceDelay={i * 55}
+              style={{
+                marginTop: offsetY,
+                ...(skin
+                  ? { aspectRatio: skin.ratio, backgroundImage: `url(/card-skins/${skin.file})` }
+                  : {}),
+              }}
             >
               <div className="item-card-top">
                 <h2>{item.name}</h2>
-                <StatusBadge status={item.status} />
               </div>
-              {item.category && <p className="item-card-category">{item.category}</p>}
               <BookmarkCounts counts={item.bookmarkCounts} />
-            </Link>
+            </ItemCard>
           );
         })}
         {items.length === 0 && <p className="empty-state">아직 등록된 항목이 없습니다.</p>}

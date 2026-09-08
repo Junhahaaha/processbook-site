@@ -97,16 +97,18 @@ h3 {
 }
 .subject-header {
   margin-bottom: 36px;
+  text-align: center;
 }
 
 /* -- card grid ----------------------------------------------------------*/
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  align-items: start;
   gap: 16px;
+  perspective: 1000px;
 }
 
-.subject-card,
 .item-card {
   display: flex;
   flex-direction: column;
@@ -116,24 +118,25 @@ h3 {
   border-radius: var(--radius);
   padding: 22px;
   box-shadow: var(--shadow);
-  transition: transform 0.15s ease, border-color 0.15s ease;
 }
-.subject-card:hover,
 .item-card:hover {
-  transform: translateY(-2px);
   border-color: var(--line-strong);
 }
 
 /* -- randomly-skinned item cards (post-it / business card / ticket) -------
    Each skin gets its own fixed text position/color matching that skin's
    art (not a single universal overlay) — a ticket already has baked-in
-   text in its own spot, a post-it has a doodle in one corner, etc. */
+   text in its own spot, a post-it has a doodle in one corner, etc. Flat
+   edges + a soft low shadow + a per-item rotation (see ItemCard) so these
+   read as paper actually pinned on rather than app-style cards. */
 .item-card-skinned {
   position: relative;
   border: none;
-  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.45);
+  border-radius: 2px;
+  box-shadow: 0 3px 10px -5px rgba(0, 0, 0, 0.4);
   background-size: cover;
   background-position: center;
+  transform-style: preserve-3d;
 }
 .item-card-skinned:hover {
   border-color: transparent;
@@ -154,12 +157,9 @@ h3 {
 .item-card-skin-postit .item-card-top {
   justify-content: center;
 }
-.item-card-skin-postit .item-card-category {
-  color: var(--ink-soft);
-}
-.item-card-skin-postit .status-badge {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: transparent;
+.item-card-skin-postit h2 {
+  font-size: 23px;
+  font-weight: 300;
 }
 
 /* business card: bottom position kept, text switched to black — scrim
@@ -178,56 +178,15 @@ h3 {
   border-radius: inherit;
   background: linear-gradient(to top, rgba(255, 255, 255, 0.75), transparent);
 }
-.item-card-skin-business-card .item-card-category {
-  color: rgba(0, 0, 0, 0.7);
-}
-.item-card-skin-business-card .status-badge {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: transparent;
-}
 
-/* ticket: center-left, clear of a typical stub/QR/printed-detail layout.
-   Different ticket variants pack their own art quite differently though
-   (see ticket-01 vs ticket-02), so title/category get their own backdrop
-   chip rather than sitting directly on the art — legible no matter what's
-   underneath. */
+/* ticket: center-left, clear of a typical stub/QR/printed-detail layout. */
 .item-card-skin-ticket {
   justify-content: center;
   padding: 14px 20px 14px 42px;
   color: var(--ink);
 }
-.item-card-skin-ticket .item-card-top,
-.item-card-skin-ticket .item-card-category {
-  background: rgba(255, 255, 255, 0.82);
-  border-radius: 6px;
-  width: fit-content;
-}
-.item-card-skin-ticket .item-card-top {
-  padding: 4px 8px;
-}
-.item-card-skin-ticket .item-card-category {
-  padding: 2px 8px;
-  color: var(--ink-soft);
-}
-.item-card-skin-ticket .status-badge {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: transparent;
-}
-.subject-card-code {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-}
-.subject-card h2,
 .item-card-top h2 {
   font-size: 18px;
-  margin: 0;
-}
-.subject-card-meta,
-.item-card-category {
-  color: var(--ink-soft);
-  font-size: 13px;
   margin: 0;
 }
 .item-card-top {
