@@ -100,12 +100,13 @@ h3 {
   text-align: center;
 }
 
-/* -- card grid ----------------------------------------------------------*/
+/* -- card grid ------------------------------------------------------------
+   Multi-column instead of grid rows: a ticket or business-card is much
+   shorter than a post-it, and a shared-row grid left dead space under the
+   short ones. Columns just stack each card at its own natural height. */
 .card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  align-items: start;
-  gap: 16px;
+  column-width: 240px;
+  column-gap: 16px;
   perspective: 1000px;
 }
 
@@ -113,6 +114,9 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
+  margin: 0 0 16px;
+  break-inside: avoid;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -158,7 +162,7 @@ h3 {
   justify-content: center;
 }
 .item-card-skin-postit h2 {
-  font-size: 23px;
+  font-size: 30px;
   font-weight: 300;
 }
 
