@@ -1,10 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSubject, SUBJECTS } from "@/lib/subjects";
 import { getSubjectItems } from "@/lib/content.server";
-import { pickCardSkin } from "@/lib/card-skins";
+import { getAvailableCardSkins, pickCardSkin } from "@/lib/card-skins.server";
 import StatusBadge from "@/components/StatusBadge";
 import BookmarkCounts from "@/components/BookmarkCounts";
 
@@ -18,6 +16,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
   if (!subject) notFound();
 
   const items = getSubjectItems(subjectSlug);
+  const availableSkins = getAvailableCardSkins();
 
   return (
     <main className="page-shell">
@@ -30,18 +29,15 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
 
       <div className="card-grid">
         {items.map((item) => {
-          const skin = pickCardSkin(`${subjectSlug}/${item.slug}`);
-          const hasSkin = fs.existsSync(path.join(process.cwd(), "public", "card-skins", skin.file));
+          const skin = pickCardSkin(`${subjectSlug}/${item.slug}`, availableSkins);
 
           return (
             <Link
               key={item.slug}
               href={`/${subjectSlug}/${item.slug}`}
-              className={`item-card ${hasSkin ? `item-card-skinned item-card-skin-${skin.id}` : ""}`}
+              className={`item-card ${skin ? `item-card-skinned item-card-skin-${skin.type}` : ""}`}
               style={
-                hasSkin
-                  ? { aspectRatio: skin.ratio, backgroundImage: `url(/card-skins/${skin.file})` }
-                  : undefined
+                skin ? { aspectRatio: skin.ratio, backgroundImage: `url(/card-skins/${skin.file})` } : undefined
               }
             >
               <div className="item-card-top">
