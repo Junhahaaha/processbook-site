@@ -359,7 +359,11 @@ h3 {
 /* zoomable image (plain photo dropped into a note — no border) */
 .zoomable-image {
   display: block;
-  max-width: 100%;
+  /* smaller than full width, and with margin: at full-bleed the slight
+     rotation's rotated bounding box overlapped the paragraph text right
+     above/below it. */
+  max-width: 82%;
+  margin: 22px auto;
   border-radius: 0;
   cursor: zoom-in;
   box-shadow: 6px 12px 26px -8px rgba(0, 0, 0, 0.6);
