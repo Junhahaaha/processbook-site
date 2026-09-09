@@ -330,12 +330,39 @@ h3 {
   margin: 20px 0;
 }
 
-/* zoomable image */
+/* pinned-photo: shared "photo tacked onto the page" look — a touch of tilt,
+   a paper-drop shadow, and a small wiggle on hover. No rounded corners
+   (no bevel) — that's the point, it should read as a flat printed photo. */
+.pinned-photo {
+  --photo-rotation: 0deg;
+  --photo-x: 0px;
+  --photo-y: 0px;
+  transform: translate(var(--photo-x), var(--photo-y)) rotate(var(--photo-rotation));
+  transition: transform 0.15s ease;
+}
+.pinned-photo:hover {
+  animation: photo-wiggle 0.35s ease;
+}
+@keyframes photo-wiggle {
+  0%,
+  100% {
+    transform: translate(var(--photo-x), var(--photo-y)) rotate(var(--photo-rotation));
+  }
+  30% {
+    transform: translate(var(--photo-x), var(--photo-y)) rotate(calc(var(--photo-rotation) + 1.6deg));
+  }
+  60% {
+    transform: translate(var(--photo-x), var(--photo-y)) rotate(calc(var(--photo-rotation) - 1.4deg));
+  }
+}
+
+/* zoomable image (plain photo dropped into a note — no border) */
 .zoomable-image {
   display: block;
   max-width: 100%;
-  border-radius: 10px;
+  border-radius: 0;
   cursor: zoom-in;
+  box-shadow: 4px 8px 18px -8px rgba(0, 0, 0, 0.5);
 }
 .zoom-overlay {
   position: fixed;
@@ -344,6 +371,7 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 18px;
   padding: 40px;
   z-index: 100;
   cursor: zoom-out;
@@ -351,21 +379,37 @@ h3 {
 .zoom-overlay-image {
   max-width: 100%;
   max-height: 100%;
-  border-radius: 8px;
+  border-radius: 0;
+  /* detail view is always shown straight, never tilted */
+  transform: none;
 }
 
-/* before/after */
+/* before/after: thumbnail is a single pinned photo with a white frame;
+   the slider only appears once you open the detail view. */
+.before-after-thumb {
+  display: block;
+  max-width: 100%;
+  border: 8px solid #fff;
+  box-shadow: 4px 8px 18px -8px rgba(0, 0, 0, 0.5);
+  cursor: zoom-in;
+}
 .before-after-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: min(90vw, 720px);
+  cursor: default;
+}
+.before-after-images {
   position: relative;
-  border-radius: 10px;
-  overflow: hidden;
   line-height: 0;
 }
-.before-after-layer {
+.before-after-images img {
   display: block;
   width: 100%;
+  border-radius: 0;
 }
-.before-after-layer:last-child {
+.before-after-images img:last-child {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -374,36 +418,70 @@ h3 {
 }
 .before-after-slider {
   width: 100%;
-  margin-top: 10px;
   accent-color: var(--accent);
 }
 
-/* gallery */
-.gallery-track {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  cursor: grab;
-  padding-bottom: 4px;
+/* gallery: thumbnail is a small pile of photos stacked like paper; opening
+   it slides through the full set. No border on any layer. */
+.gallery-stack {
+  /* fixed size, not fit-content: every child is position:absolute (out of
+     flow), so a fit-content box would collapse to zero width and misplace
+     the count badge below. */
+  position: relative;
+  height: 220px;
+  width: 220px;
+  max-width: 100%;
+  margin: 0 auto;
+  cursor: zoom-in;
 }
-.gallery-track:active {
-  cursor: grabbing;
-}
-.gallery-item {
-  height: 260px;
-  border-radius: 10px;
-  scroll-snap-align: start;
-  flex: 0 0 auto;
+.gallery-stack-item {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-left: -90px; /* rough centering; transform below adds the scatter */
+  height: 220px;
+  width: auto;
+  max-width: 200px;
+  object-fit: cover;
+  box-shadow: 4px 8px 18px -8px rgba(0, 0, 0, 0.5);
   user-select: none;
 }
+.gallery-count-badge {
+  position: absolute;
+  bottom: -8px;
+  right: -8px;
+  background: var(--ink);
+  color: var(--surface);
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  z-index: 10;
+}
+.gallery-overlay {
+  gap: 24px;
+}
+.gallery-nav {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 40px;
+  line-height: 1;
+  padding: 8px 12px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.gallery-nav:hover {
+  color: #fff;
+}
 
-/* cursor switch */
+/* cursor switch: white frame, swaps on hover */
 .cursor-switch {
   position: relative;
-  border-radius: 10px;
   overflow: hidden;
   line-height: 0;
+  border: 8px solid #fff;
+  box-shadow: 4px 8px 18px -8px rgba(0, 0, 0, 0.5);
 }
 .cursor-switch-layer {
   display: block;
