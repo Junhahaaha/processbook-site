@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { Suspense, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Canvas } from "@react-three/fiber";
+import { Environment, Lightformer } from "@react-three/drei";
 import Notebook from "./Notebook";
 import TurntableGroup, { type DragState } from "./TurntableGroup";
 import PasswordGate from "./PasswordGate";
@@ -96,6 +97,19 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
           <hemisphereLight args={["#fffaf0", "#3d3527", 0.6]} />
           <directionalLight position={[4, 5, 6]} intensity={1.9} />
           <directionalLight position={[-4, -2, 3]} intensity={0.45} />
+          {/* Local, offline env map (baked once from these lightformers — no
+              network fetch, so no risk of the Suspense hang a CDN HDR caused
+              earlier) — gives smooth/glossy note surfaces a soft reflected
+              highlight from more angles, including when a focused note is
+              turned around to its back, instead of relying only on the two
+              directional lights above lining up just right. */}
+          <Suspense fallback={null}>
+            <Environment resolution={64} environmentIntensity={0.6}>
+              <Lightformer form="rect" intensity={1.4} color="#fff7ea" position={[3, 4, 5]} scale={[4, 2.5, 1]} target={[0, 0, 0]} />
+              <Lightformer form="rect" intensity={0.6} color="#dbe6ff" position={[-4, 1, -4]} scale={[3, 3, 1]} target={[0, 0, 0]} />
+              <Lightformer form="ring" intensity={0.5} color="#ffffff" position={[0, 2, -6]} scale={3} target={[0, 0, 0]} />
+            </Environment>
+          </Suspense>
           <TurntableGroup
             count={subjects.length}
             dragStateRef={dragStateRef}
