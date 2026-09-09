@@ -362,7 +362,7 @@ h3 {
   max-width: 100%;
   border-radius: 0;
   cursor: zoom-in;
-  box-shadow: 4px 8px 18px -8px rgba(0, 0, 0, 0.5);
+  box-shadow: 6px 12px 26px -8px rgba(0, 0, 0, 0.6);
 }
 .zoom-overlay {
   position: fixed;
@@ -390,7 +390,7 @@ h3 {
   display: block;
   max-width: 100%;
   border: 8px solid #fff;
-  box-shadow: 4px 8px 18px -8px rgba(0, 0, 0, 0.5);
+  box-shadow: 6px 12px 26px -8px rgba(0, 0, 0, 0.6);
   cursor: zoom-in;
 }
 .before-after-stage {
@@ -428,22 +428,22 @@ h3 {
      flow), so a fit-content box would collapse to zero width and misplace
      the count badge below. */
   position: relative;
-  height: 220px;
-  width: 220px;
+  height: 240px;
+  width: 280px;
   max-width: 100%;
   margin: 0 auto;
   cursor: zoom-in;
 }
 .gallery-stack-item {
   position: absolute;
-  top: 0;
+  top: 10px;
   left: 50%;
   margin-left: -90px; /* rough centering; transform below adds the scatter */
   height: 220px;
   width: auto;
   max-width: 200px;
   object-fit: cover;
-  box-shadow: 4px 8px 18px -8px rgba(0, 0, 0, 0.5);
+  box-shadow: 6px 12px 26px -8px rgba(0, 0, 0, 0.6);
   user-select: none;
 }
 .gallery-count-badge {
@@ -481,7 +481,7 @@ h3 {
   overflow: hidden;
   line-height: 0;
   border: 8px solid #fff;
-  box-shadow: 4px 8px 18px -8px rgba(0, 0, 0, 0.5);
+  box-shadow: 6px 12px 26px -8px rgba(0, 0, 0, 0.6);
 }
 .cursor-switch-layer {
   display: block;

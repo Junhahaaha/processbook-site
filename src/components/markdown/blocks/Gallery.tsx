@@ -32,9 +32,9 @@ export default function Gallery({ lines }: { lines: string[] }) {
       <div className="gallery-stack" onClick={() => openAt(0)}>
         {stack.map((src, i) => {
           const seed = `${src}#${i}`;
-          const rotation = rotationForSeed(seed, 6);
-          const offsetX = (i - (stack.length - 1) / 2) * 7;
-          const offsetY = -i * 3;
+          const rotation = rotationForSeed(seed, 9);
+          const offsetX = (i - (stack.length - 1) / 2) * 22;
+          const offsetY = -i * 10;
           return (
             // eslint-disable-next-line @next/next/no-img-element
             <img
