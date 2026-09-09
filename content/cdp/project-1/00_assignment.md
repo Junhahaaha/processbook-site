@@ -73,7 +73,7 @@ tags: [assignment]
 (이번에 처음 알았다.)
 ```before-after
 /content/cdp/project-1/cdp_009.jpg
-cdp_013.jpg
+/content/cdp/project-1/cdp_013.jpg
 ```
 문제는 우측의 빵 가판대 뿐만이 아닌, 왼쪽의 좌석 영역에서도 발생한다. 사진을 보면 알 수 있듯이 매장바깥은 내리막길이다. 사람들의 눈높이가 자연스럽게 다리쪽으로 이동하게 되는데, 해당 자리에서 빵을 먹어본 경험으로, 사람들이 지나갈 때마다 조금씩 신경이 쓰인다.
 ```feedback
