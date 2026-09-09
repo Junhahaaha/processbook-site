@@ -30,6 +30,7 @@ export type ItemDetail = {
   overviewBody: string;
   entries: Entry[];
   feedbackColors: Record<string, string>;
+  feedbackTexts: string[];
 };
 
 export type ItemSummary = {
@@ -82,12 +83,12 @@ function extractFeedbackTexts(text: string): string[] {
 // Keyed by each feedback block's own text so the renderer can look up a color
 // with a pure lookup instead of a mutable position counter (duplicate feedback
 // text will share a color — an acceptable, unlikely edge case).
-function buildFeedbackColorMap(texts: string[]): Record<string, string> {
+function buildFeedbackColorMap(texts: string[], seed = ""): Record<string, string> {
   const map: Record<string, string> = {};
   let i = 0;
   for (const text of texts) {
     if (text in map) continue;
-    map[text] = colorForIndex(i);
+    map[text] = colorForIndex(i, seed);
     i += 1;
   }
   return map;
@@ -99,11 +100,6 @@ function bookmarkCountsFromColorMap(map: Record<string, string>): Record<string,
   return counts;
 }
 
-function mergeCounts(a: Record<string, number>, b: Record<string, number>): Record<string, number> {
-  const out = { ...a };
-  for (const [k, v] of Object.entries(b)) out[k] = (out[k] ?? 0) + v;
-  return out;
-}
 
 function loadItem(subjectSlug: string, itemSlug: string): ItemDetail | undefined {
   const dir = path.join(CONTENT_ROOT, subjectSlug, itemSlug);
@@ -140,7 +136,7 @@ function loadItem(subjectSlug: string, itemSlug: string): ItemDetail | undefined
     ...extractFeedbackTexts(overviewBodyRaw),
     ...entries.flatMap((e) => extractFeedbackTexts(e.body)),
   ];
-  const feedbackColors = buildFeedbackColorMap(feedbackTexts);
+  const feedbackColors = buildFeedbackColorMap(feedbackTexts, `${subjectSlug}/${itemSlug}`);
 
   return {
     slug: itemSlug,
@@ -152,6 +148,7 @@ function loadItem(subjectSlug: string, itemSlug: string): ItemDetail | undefined
     overviewBody: overviewBodyRaw,
     entries,
     feedbackColors,
+    feedbackTexts,
   };
 }
 
@@ -186,7 +183,19 @@ export function getSubjectSummary(subjectSlug: string): SubjectSummary | undefin
   const subject = SUBJECTS.find((s) => s.slug === subjectSlug);
   if (!subject) return undefined;
   const items = getSubjectItems(subjectSlug);
-  const bookmarkCounts = items.reduce((acc, i) => mergeCounts(acc, i.bookmarkCounts), {} as Record<string, number>);
+
+  // Merging each item's own feedbackColors here would mostly repeat 1-2
+  // colors: loadItem numbers each item's feedback from 0, and most items
+  // only have a couple of feedback blocks, so nearly every item's colors
+  // restart at the same first palette entries. The notebook's bookmark
+  // tabs read much better with real variety, so re-number across every
+  // feedback block in the subject instead (item pages keep their own
+  // local numbering — this only changes the notebook's tab colors).
+  const subjectTexts = itemDirs(subject.slug).flatMap(
+    (slug) => loadItem(subject.slug, slug)?.feedbackTexts ?? []
+  );
+  const bookmarkCounts = bookmarkCountsFromColorMap(buildFeedbackColorMap(subjectTexts, subject.slug));
+
   return { ...subject, itemCount: items.length, bookmarkCounts };
 }
 

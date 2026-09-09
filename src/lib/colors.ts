@@ -1,3 +1,5 @@
+import { hashString } from "./jitter";
+
 // Palette used to give each `feedback` block its own distinct color, assigned
 // sequentially per page (see extractFeedbackBlocks in content.server.ts).
 export const BOOKMARK_PALETTE = [
@@ -15,6 +17,14 @@ export const BOOKMARK_PALETTE = [
   "#5fa66b", // moss
 ];
 
-export function colorForIndex(index: number): string {
-  return BOOKMARK_PALETTE[index % BOOKMARK_PALETTE.length];
+// `seed` (an item or subject slug) shifts where in the palette a page's
+// numbering starts. Without it every page's first feedback block landed on
+// the same palette entry (index 0, rust) and its second on the same next
+// entry (blue) — so with only a couple of feedback blocks per page (the
+// common case), every subject's notebook bookmarks and every item's clips
+// ended up the same rust+blue pair instead of looking distinct from each
+// other.
+export function colorForIndex(index: number, seed = ""): string {
+  const offset = seed ? hashString(seed) : 0;
+  return BOOKMARK_PALETTE[(offset + index) % BOOKMARK_PALETTE.length];
 }
