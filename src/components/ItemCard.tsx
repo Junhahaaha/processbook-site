@@ -44,7 +44,14 @@ export default function ItemCard({
     const el = ref.current;
     if (!el) return;
     const s = t.current;
-    el.style.transform = `translate(${s.dragX}px, ${s.dragY}px) rotate(${baseRotation}deg) rotateX(${s.tiltX}deg) rotateY(${s.tiltY}deg) scale(${s.scale})`;
+    // perspective() lives in this element's own transform (rather than as a
+    // `perspective` CSS property on an ancestor) so the tilt still reads as
+    // 3D without making any ancestor a perspective-establishing containing
+    // block — that combined with the masonry multicol grid and the clip's
+    // absolutely-positioned, masked geometry was the root cause of a real
+    // bug where a card's feedback clip rendered oversized and could bleed
+    // onto a different card entirely.
+    el.style.transform = `translate(${s.dragX}px, ${s.dragY}px) perspective(800px) rotate(${baseRotation}deg) rotateX(${s.tiltX}deg) rotateY(${s.tiltY}deg) scale(${s.scale})`;
   }
 
   function handleTransitionEnd(e: TransitionEvent<HTMLAnchorElement>) {

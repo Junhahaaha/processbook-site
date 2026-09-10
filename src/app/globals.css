@@ -112,7 +112,6 @@ h3 {
 .card-grid {
   column-width: 240px;
   column-gap: 16px;
-  perspective: 1000px;
 }
 
 .item-card {
@@ -172,7 +171,6 @@ h3 {
   box-shadow: 0 3px 10px -5px rgba(0, 0, 0, 0.4);
   background-size: cover;
   background-position: center;
-  transform-style: preserve-3d;
 }
 .item-card-skinned:hover {
   border-color: transparent;
