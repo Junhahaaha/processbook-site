@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSubject, SUBJECTS } from "@/lib/subjects";
 import { getSubjectItems } from "@/lib/content.server";
-import { getAvailableCardSkins, hasClipAsset, pickCardSkin } from "@/lib/card-skins.server";
+import { getAvailableCardSkins, pickCardSkin } from "@/lib/card-skins.server";
 import { jitterForSeed } from "@/lib/jitter";
 import { layoutClips } from "@/lib/clip-layout";
 import ItemCard from "@/components/ItemCard";
@@ -19,7 +19,6 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
 
   const items = getSubjectItems(subjectSlug);
   const availableSkins = getAvailableCardSkins();
-  const showClips = hasClipAsset();
 
   return (
     <main className="page-shell">
@@ -39,7 +38,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
           const bookmarkColors = Object.entries(item.bookmarkCounts).flatMap(([color, count]) =>
             Array.from({ length: count }, () => color)
           );
-          const clips = showClips ? layoutClips(bookmarkColors.length) : [];
+          const clips = layoutClips(bookmarkColors.length);
 
           return (
             <ItemCard

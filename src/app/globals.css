@@ -133,29 +133,21 @@ h3 {
   border-color: var(--line-strong);
 }
 
-/* paperclip(s) pinched along the top edge of any card with feedback
-   bookmarks, one per bookmark, side by side (see layoutClips). Recolored
-   per-bookmark to match its feedback color via mask-image (clip.png's
-   alpha channel as the shape, filled with backgroundColor) rather than
-   tinting an <img>. clip.png is 81x202; the pinch point sits ~80px down
-   from the top of that source, i.e. (80/81) of the rendered width — top
-   offset is negative that amount so the pinch point lands at y=0. */
+/* paperclip(s) pinched onto a card's top-left corner, one per feedback
+   bookmark, side by side (see layoutClips). Rendered as an inline SVG
+   stroke (recolored per-bookmark via `stroke`) rather than a CSS
+   mask-image div — a masked, absolutely-positioned element here used to
+   trigger a real rendering bug (huge/mispositioned, or only one of several
+   clips on a card painting at all) specific to combining position:absolute
+   + mask-image with the subject page's multicol masonry grid ancestor. */
 .item-card .card-clip {
   position: absolute;
-  top: -40px;
-  left: -12px;
-  width: 40px;
-  height: 100px;
-  -webkit-mask-image: url(/card-skins/clip.png);
-  mask-image: url(/card-skins/clip.png);
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
+  top: -12px;
+  left: -10px;
+  width: 32px;
+  height: 32px;
   pointer-events: none;
-  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.35));
 }
 
 /* -- randomly-skinned item cards (post-it / business card / ticket) -------
