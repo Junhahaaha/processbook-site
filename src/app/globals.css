@@ -672,6 +672,50 @@ h3 {
   white-space: pre-wrap;
   font-size: 14.5px;
 }
+/* collapsible toggle note (```toggle) */
+.prose-content .toggle-block {
+  margin: 20px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+.prose-content .toggle-block-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  font-size: 14.5px;
+  user-select: none;
+}
+.prose-content .toggle-block-summary::-webkit-details-marker {
+  display: none;
+}
+.prose-content .toggle-block-summary:hover {
+  color: var(--accent);
+}
+.prose-content .toggle-block-chevron {
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: var(--ink-faint);
+  transition: transform 0.15s ease;
+}
+.prose-content .toggle-block[open] .toggle-block-chevron {
+  transform: rotate(90deg);
+}
+.prose-content .toggle-block[open] .toggle-block-summary {
+  border-bottom: 1px solid var(--line);
+}
+.prose-content .toggle-block-body {
+  padding: 14px 16px 0;
+}
+.prose-content .toggle-block-body > :last-child {
+  margin-bottom: 14px;
+}
+
 .bookmark-flash {
   animation: feedback-flash 0.9s ease;
 }

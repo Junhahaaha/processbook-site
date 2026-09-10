@@ -13,6 +13,7 @@ import PdfBlock from "./blocks/PdfBlock";
 import ColorChip from "./blocks/ColorChip";
 import LinkCard from "./blocks/LinkCard";
 import FeedbackCard from "./blocks/FeedbackCard";
+import ToggleBlock from "./blocks/ToggleBlock";
 
 export default function ProcessMarkdown({
   source,
@@ -59,6 +60,12 @@ export default function ProcessMarkdown({
           const text = raw.trim();
           const color = feedbackColors[text] ?? colorForIndex(0);
           return <FeedbackCard color={color} content={text} />;
+        }
+        case "toggle": {
+          const nl = raw.indexOf("\n");
+          const title = (nl === -1 ? raw : raw.slice(0, nl)).trim();
+          const body = nl === -1 ? "" : raw.slice(nl + 1).replace(/^\n+/, "");
+          return <ToggleBlock title={title} body={body} />;
         }
         default:
           return (
