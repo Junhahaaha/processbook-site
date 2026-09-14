@@ -320,30 +320,19 @@ h3 {
   margin: 20px 0;
 }
 
-/* pinned-photo: shared "photo tacked onto the page" look — a touch of tilt,
-   a paper-drop shadow, and a small wiggle on hover. No rounded corners
-   (no bevel) — that's the point, it should read as a flat printed photo. */
+/* pinned-photo: shared "photo tacked onto the page" look — a touch of
+   tilt, a paper-drop shadow, and a knock-and-settle swing as the cursor
+   passes over it (--photo-swing, driven by usePinnedSwing — same
+   underdamped-spring mechanism as the item cards, just tuned stronger).
+   No rounded corners (no bevel) — that's the point, it should read as a
+   flat printed photo. */
 .pinned-photo {
   --photo-rotation: 0deg;
   --photo-x: 0px;
   --photo-y: 0px;
-  transform: translate(var(--photo-x), var(--photo-y)) rotate(var(--photo-rotation));
+  --photo-swing: 0deg;
+  transform: translate(var(--photo-x), var(--photo-y)) rotate(calc(var(--photo-rotation) + var(--photo-swing)));
   transition: transform 0.15s ease;
-}
-.pinned-photo:hover {
-  animation: photo-wiggle 0.35s ease;
-}
-@keyframes photo-wiggle {
-  0%,
-  100% {
-    transform: translate(var(--photo-x), var(--photo-y)) rotate(var(--photo-rotation));
-  }
-  30% {
-    transform: translate(var(--photo-x), var(--photo-y)) rotate(calc(var(--photo-rotation) + 1.6deg));
-  }
-  60% {
-    transform: translate(var(--photo-x), var(--photo-y)) rotate(calc(var(--photo-rotation) - 1.4deg));
-  }
 }
 
 /* zoomable image (plain photo dropped into a note — no border) */

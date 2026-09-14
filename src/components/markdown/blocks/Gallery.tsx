@@ -2,8 +2,46 @@
 
 import { useState } from "react";
 import { rotationForSeed } from "@/lib/jitter";
+import { usePinnedSwing } from "@/lib/usePinnedSwing";
 
 const STACK_DEPTH = 4; // how many pages peek out of the pile
+
+function GalleryStackImage({
+  src,
+  alt,
+  rotation,
+  offsetX,
+  offsetY,
+  zIndex,
+}: {
+  src: string;
+  alt: string;
+  rotation: number;
+  offsetX: number;
+  offsetY: number;
+  zIndex: number;
+}) {
+  const { ref, onPointerMove } = usePinnedSwing<HTMLImageElement>();
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      ref={ref}
+      src={src}
+      alt={alt}
+      className="gallery-stack-item pinned-photo"
+      style={
+        {
+          "--photo-rotation": `${rotation}deg`,
+          "--photo-x": `${offsetX}px`,
+          "--photo-y": `${offsetY}px`,
+          zIndex,
+        } as React.CSSProperties
+      }
+      draggable={false}
+      onPointerMove={onPointerMove}
+    />
+  );
+}
 
 export default function Gallery({ lines }: { lines: string[] }) {
   const items = lines.filter(Boolean);
@@ -36,21 +74,14 @@ export default function Gallery({ lines }: { lines: string[] }) {
           const offsetX = (i - (stack.length - 1) / 2) * 22;
           const offsetY = -i * 10;
           return (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <GalleryStackImage
               key={i}
               src={src}
               alt={`갤러리 ${i + 1}/${items.length}`}
-              className="gallery-stack-item pinned-photo"
-              style={
-                {
-                  "--photo-rotation": `${rotation}deg`,
-                  "--photo-x": `${offsetX}px`,
-                  "--photo-y": `${offsetY}px`,
-                  zIndex: stack.length - i,
-                } as React.CSSProperties
-              }
-              draggable={false}
+              rotation={rotation}
+              offsetX={offsetX}
+              offsetY={offsetY}
+              zIndex={stack.length - i}
             />
           );
         })}

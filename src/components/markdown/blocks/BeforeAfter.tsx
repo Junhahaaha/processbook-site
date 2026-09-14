@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { rotationForSeed } from "@/lib/jitter";
+import { usePinnedSwing } from "@/lib/usePinnedSwing";
 
 export default function BeforeAfter({ lines }: { lines: string[] }) {
   const [open, setOpen] = useState(false);
   const [opacity, setOpacity] = useState(50);
+  const { ref, onPointerMove } = usePinnedSwing<HTMLImageElement>();
   const [before, after] = lines.filter(Boolean);
   if (!before || !after) return null;
   const rotation = rotationForSeed(`${before}|${after}`);
@@ -14,11 +16,13 @@ export default function BeforeAfter({ lines }: { lines: string[] }) {
     <div className="block-card before-after" data-block="before-after">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={ref}
         src={after}
         alt="비교 이미지 (클릭하면 슬라이드로 비교)"
         className="before-after-thumb pinned-photo"
         style={{ "--photo-rotation": `${rotation}deg` } as React.CSSProperties}
         onClick={() => setOpen(true)}
+        onPointerMove={onPointerMove}
       />
 
       {open && (

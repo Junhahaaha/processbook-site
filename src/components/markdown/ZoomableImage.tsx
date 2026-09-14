@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { rotationForSeed } from "@/lib/jitter";
+import { usePinnedSwing } from "@/lib/usePinnedSwing";
 
 // Detail view is a two-stage relay, not an instant swap:
 //  1. thumb-exit  — the pinned photo pops off the note, hangs for a beat,
@@ -31,7 +32,7 @@ const IMAGE_EXIT_MS = 560;
 export default function ZoomableImage(props: React.ImgHTMLAttributes<HTMLImageElement>) {
   const [phase, setPhase] = useState<Phase>("closed");
   const [fallTo, setFallTo] = useState({ x: 0, y: 0, scale: 1 });
-  const thumbRef = useRef<HTMLImageElement>(null);
+  const { ref: thumbRef, onPointerMove: onSwing } = usePinnedSwing<HTMLImageElement>();
   const overlayImgRef = useRef<HTMLImageElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const rotation = rotationForSeed(String(props.src ?? ""));
@@ -84,6 +85,7 @@ export default function ZoomableImage(props: React.ImgHTMLAttributes<HTMLImageEl
         }`}
         style={rotationVar}
         onClick={handleOpen}
+        onPointerMove={onSwing}
       />
       {showOverlay &&
         // Portaled to <body>: a lone image in markdown lands inside a <p>,
