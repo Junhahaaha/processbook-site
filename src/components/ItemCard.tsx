@@ -19,8 +19,8 @@ const TILT_MAX = 9;
 // ("천천히 멈춘다") instead of snapping straight back to 0.
 const SWING_STIFFNESS = 90;
 const SWING_DAMPING = 6;
-const SWING_IMPULSE = 0.16; // deg/s of swing velocity added per px of cursor travel
-const SWING_VELOCITY_MAX = 50;
+const SWING_IMPULSE = 0.2; // deg/s of swing velocity added per px of cursor travel
+const SWING_VELOCITY_MAX = 62;
 const SWING_SETTLE_EPSILON = 0.02;
 
 export default function ItemCard({

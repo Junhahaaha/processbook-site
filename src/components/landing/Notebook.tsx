@@ -12,11 +12,10 @@ import type { NotebookSubjectData } from "./types";
 const ACCENTS = ["#2f5d50", "#3f7cc0", "#c0563f", "#8a5fc7"];
 export const RADIUS = 2.3;
 const FOCUS_PUSH = 1.4;
-// Correct password: this notebook pushes hard toward the camera (feels like
-// zooming into the screen) while every other one sinks away below frame.
-const UNLOCK_PUSH = 2.7;
-const UNLOCK_SCALE = 1.85;
-const UNLOCK_LERP = 0.07;
+// Correct password: this notebook just stays in its focused pose (no extra
+// zoom — a bigger push/scale ended up covering the whole background, which
+// read as broken rather than intentional) while every other one sinks away
+// below frame.
 const SINK_Y = -5.5;
 const MAX_DT = 0.05;
 
@@ -70,12 +69,8 @@ export default function Notebook({
     const g = radial.current;
     if (!g) return;
 
-    const targetZ = isUnlocking
-      ? RADIUS + FOCUS_PUSH + UNLOCK_PUSH
-      : isFocused
-        ? RADIUS + FOCUS_PUSH
-        : RADIUS;
-    const targetScale = isUnlocking ? UNLOCK_SCALE : isFocused ? 1.05 : anyFocused ? 0.7 : 1;
+    const targetZ = isFocused ? RADIUS + FOCUS_PUSH : RADIUS;
+    const targetScale = isFocused ? 1.05 : anyFocused ? 0.7 : 1;
     const targetY = anyUnlocking && !isUnlocking ? SINK_Y : 0;
     const targetOpacity = isUnlocking
       ? 1
@@ -84,11 +79,10 @@ export default function Notebook({
         : anyFocused && !isFocused
           ? 0.15
           : 1;
-    const zoomLerp = isUnlocking ? UNLOCK_LERP : 0.15;
 
-    g.position.z += (targetZ - g.position.z) * zoomLerp;
+    g.position.z += (targetZ - g.position.z) * 0.15;
     g.position.y += (targetY - g.position.y) * 0.1;
-    g.scale.setScalar(g.scale.x + (targetScale - g.scale.x) * zoomLerp);
+    g.scale.setScalar(g.scale.x + (targetScale - g.scale.x) * 0.15);
 
     g.traverse((child) => {
       if (child instanceof THREE.Mesh) {

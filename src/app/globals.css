@@ -359,29 +359,30 @@ h3 {
   box-shadow: 6px 12px 26px -8px rgba(0, 0, 0, 0.6);
 }
 
-/* thumbnail's exit relay: pop off the note, hang for a beat, then drop away
-   fast — see ZoomableImage's phase machine. Timing-function is set per
-   keyframe so each leg gets its own feel (snappy pop / slow hang / fast
-   swoosh) instead of one curve stretched over the whole thing. */
+/* thumbnail's exit relay: pop off the note, hang for a beat, then drop
+   straight down and off the screen — see ZoomableImage's phase machine.
+   No opacity fade: it should read as physically leaving, not dissolving.
+   The overlay doesn't even mount until this finishes, so nothing else
+   appears while this plays. Timing-function is set per keyframe so each
+   leg gets its own feel (snappy pop / slow hang / fast plunge) instead of
+   one curve stretched over the whole thing. */
 @keyframes thumb-pop-drop {
   0% {
     transform: translate(var(--photo-x), var(--photo-y)) rotate(var(--photo-rotation)) scale(1);
-    opacity: 1;
     animation-timing-function: cubic-bezier(0.34, 1.6, 0.64, 1);
   }
   16% {
     transform: translate(var(--photo-x), calc(var(--photo-y) - 9px)) rotate(var(--photo-rotation)) scale(1.05);
-    opacity: 1;
     animation-timing-function: ease-in;
   }
   42% {
     transform: translate(var(--photo-x), calc(var(--photo-y) + 5px)) rotate(var(--photo-rotation)) scale(1);
-    opacity: 1;
     animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.2);
   }
   100% {
-    transform: translate(var(--photo-x), calc(var(--photo-y) + 170px)) rotate(var(--photo-rotation)) scale(0.92);
-    opacity: 0;
+    /* 100vh rather than a fixed px offset — guaranteed to clear the
+       viewport no matter where the image sits on the page. */
+    transform: translate(var(--photo-x), 100vh) rotate(var(--photo-rotation)) scale(0.92);
   }
 }
 .zoomable-image.is-exiting {
@@ -416,8 +417,9 @@ h3 {
   cursor: zoom-out;
   animation: zoom-overlay-fade-in 0.5s ease;
 }
-.zoom-overlay.is-closing {
-  animation: zoom-overlay-fade-out 0.46s ease forwards;
+.zoom-overlay.is-exiting {
+  /* fades out alongside the falling image, timed to clear right as it lands */
+  animation: zoom-overlay-fade-out 0.56s ease forwards;
 }
 .zoom-overlay-image {
   max-width: 100%;
@@ -425,11 +427,6 @@ h3 {
   border-radius: 0;
   /* detail view is always shown straight, never tilted, once settled */
   transform: none;
-}
-/* waiting off-screen while the thumbnail is still playing its exit */
-.zoom-overlay-image.is-waiting {
-  opacity: 0;
-  transform: translateY(20vh);
 }
 /* swoosh up: fastest at the start, easing to a stop at the top */
 @keyframes overlay-image-rise {
@@ -445,20 +442,36 @@ h3 {
 .zoom-overlay-image.is-entering {
   animation: overlay-image-rise 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-/* falls back down, rotating into the thumbnail's resting angle so it reads
-   as the same photo landing back on the note, not a different element. */
+/* falls back toward the thumbnail's real, live-measured spot (--fall-x/
+   --fall-y/--fall-scale, set from getBoundingClientRect in ZoomableImage —
+   an actual FLIP, not a guessed distance) — shrinking and rotating into
+   its resting angle, with a small settle-bounce (scale overshoots past the
+   landing size, then corrects) and a shadow that tightens as it "lands".
+   It ends at the exact size/position/rotation of the real thumbnail
+   underneath, so swapping back to it is invisible. */
 @keyframes overlay-image-fall {
-  from {
-    transform: translateY(0) rotate(0deg);
-    opacity: 1;
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+    filter: drop-shadow(0 34px 44px rgba(0, 0, 0, 0.5));
+    animation-timing-function: cubic-bezier(0.55, 0.06, 0.68, 0.19);
   }
-  to {
-    transform: translateY(26vh) rotate(var(--photo-rotation));
-    opacity: 0;
+  70% {
+    transform: translate(var(--fall-x), var(--fall-y)) scale(var(--fall-scale)) rotate(var(--photo-rotation));
+    filter: drop-shadow(4px 8px 14px rgba(0, 0, 0, 0.4));
+    animation-timing-function: ease-out;
+  }
+  85% {
+    transform: translate(var(--fall-x), var(--fall-y)) scale(calc(var(--fall-scale) * 1.1))
+      rotate(var(--photo-rotation));
+    filter: drop-shadow(5px 10px 16px rgba(0, 0, 0, 0.45));
+  }
+  100% {
+    transform: translate(var(--fall-x), var(--fall-y)) scale(var(--fall-scale)) rotate(var(--photo-rotation));
+    filter: drop-shadow(6px 12px 26px rgba(0, 0, 0, 0.6));
   }
 }
 .zoom-overlay-image.is-exiting {
-  animation: overlay-image-fall 0.46s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+  animation: overlay-image-fall 0.56s forwards;
 }
 
 /* before/after: thumbnail is a single pinned photo with a white frame;
