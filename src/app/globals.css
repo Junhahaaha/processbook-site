@@ -358,6 +358,51 @@ h3 {
   cursor: zoom-in;
   box-shadow: 6px 12px 26px -8px rgba(0, 0, 0, 0.6);
 }
+
+/* thumbnail's exit relay: pop off the note, hang for a beat, then drop away
+   fast — see ZoomableImage's phase machine. Timing-function is set per
+   keyframe so each leg gets its own feel (snappy pop / slow hang / fast
+   swoosh) instead of one curve stretched over the whole thing. */
+@keyframes thumb-pop-drop {
+  0% {
+    transform: translate(var(--photo-x), var(--photo-y)) rotate(var(--photo-rotation)) scale(1);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.34, 1.6, 0.64, 1);
+  }
+  16% {
+    transform: translate(var(--photo-x), calc(var(--photo-y) - 9px)) rotate(var(--photo-rotation)) scale(1.05);
+    opacity: 1;
+    animation-timing-function: ease-in;
+  }
+  42% {
+    transform: translate(var(--photo-x), calc(var(--photo-y) + 5px)) rotate(var(--photo-rotation)) scale(1);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0.2);
+  }
+  100% {
+    transform: translate(var(--photo-x), calc(var(--photo-y) + 170px)) rotate(var(--photo-rotation)) scale(0.92);
+    opacity: 0;
+  }
+}
+.zoomable-image.is-exiting {
+  animation: thumb-pop-drop 0.52s forwards;
+  pointer-events: none;
+}
+.zoomable-image.is-detached {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes zoom-overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes zoom-overlay-fade-out {
+  to {
+    opacity: 0;
+  }
+}
 .zoom-overlay {
   position: fixed;
   inset: 0;
@@ -369,13 +414,51 @@ h3 {
   padding: 40px;
   z-index: 100;
   cursor: zoom-out;
+  animation: zoom-overlay-fade-in 0.5s ease;
+}
+.zoom-overlay.is-closing {
+  animation: zoom-overlay-fade-out 0.46s ease forwards;
 }
 .zoom-overlay-image {
   max-width: 100%;
   max-height: 100%;
   border-radius: 0;
-  /* detail view is always shown straight, never tilted */
+  /* detail view is always shown straight, never tilted, once settled */
   transform: none;
+}
+/* waiting off-screen while the thumbnail is still playing its exit */
+.zoom-overlay-image.is-waiting {
+  opacity: 0;
+  transform: translateY(20vh);
+}
+/* swoosh up: fastest at the start, easing to a stop at the top */
+@keyframes overlay-image-rise {
+  from {
+    transform: translateY(22vh);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.zoom-overlay-image.is-entering {
+  animation: overlay-image-rise 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+/* falls back down, rotating into the thumbnail's resting angle so it reads
+   as the same photo landing back on the note, not a different element. */
+@keyframes overlay-image-fall {
+  from {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(26vh) rotate(var(--photo-rotation));
+    opacity: 0;
+  }
+}
+.zoom-overlay-image.is-exiting {
+  animation: overlay-image-fall 0.46s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
 }
 
 /* before/after: thumbnail is a single pinned photo with a white frame;
@@ -812,6 +895,7 @@ h3 {
     var(--surface) 27px,
     var(--line) 28px
   );
+  border: 3px solid transparent;
   border-radius: 10px;
   box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.5);
   padding: 32px 28px 28px;
@@ -830,6 +914,51 @@ h3 {
     transform: translateY(60px);
     opacity: 0;
   }
+}
+/* wrong code: red border blink + a side-to-side shake */
+@keyframes password-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(9px);
+  }
+  60% {
+    transform: translateX(-6px);
+  }
+  80% {
+    transform: translateX(4px);
+  }
+}
+@keyframes password-border-flash {
+  0%,
+  100% {
+    border-color: transparent;
+  }
+  25%,
+  75% {
+    border-color: #c0563f;
+  }
+}
+.password-gate-page.is-error {
+  animation: password-shake 0.4s ease, password-border-flash 0.4s ease;
+}
+/* correct code: the whole gate slides away downward — slow start, then
+   speeding up — while the backdrop clears so the 3D "unlock" scene behind
+   it (see NotebookLanding) is visible through it as it goes. */
+.password-gate-page.is-success {
+  transition: transform 0.7s cubic-bezier(0.55, 0.06, 0.68, 0.19), opacity 0.7s ease;
+  transform: translateY(160%);
+  opacity: 0.3;
+}
+.password-gate-backdrop.is-success {
+  background: transparent;
+  transition: background 0.5s ease;
+  pointer-events: none;
 }
 .password-gate-close {
   position: absolute;

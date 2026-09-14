@@ -5,6 +5,8 @@ import { NOTEBOOK_PASSWORDS } from "@/lib/notebook-passwords";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
 
+type Status = "idle" | "error" | "success";
+
 export default function PasswordGate({
   subjectSlug,
   subjectName,
@@ -17,10 +19,10 @@ export default function PasswordGate({
   onCorrect: () => void;
 }) {
   const [value, setValue] = useState("");
-  const [error, setError] = useState(false);
+  const [status, setStatus] = useState<Status>("idle");
 
   function handleKey(key: string) {
-    if (error) return;
+    if (status !== "idle") return;
     if (key === "⌫") {
       setValue((v) => v.slice(0, -1));
       return;
@@ -30,11 +32,14 @@ export default function PasswordGate({
     setValue(next);
     if (next.length === 4) {
       if (next === NOTEBOOK_PASSWORDS[subjectSlug]) {
+        setStatus("success");
+        // caller drives the 3D "unlock" sequence and the delayed navigation
+        // — this component only plays its own slide-away animation.
         onCorrect();
       } else {
-        setError(true);
+        setStatus("error");
         setTimeout(() => {
-          setError(false);
+          setStatus("idle");
           setValue("");
         }, 1200);
       }
@@ -42,8 +47,16 @@ export default function PasswordGate({
   }
 
   return (
-    <div className="password-gate-backdrop" onClick={onClose}>
-      <div className="password-gate-page" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`password-gate-backdrop ${status === "success" ? "is-success" : ""}`}
+      onClick={status === "idle" ? onClose : undefined}
+    >
+      <div
+        className={`password-gate-page ${status === "error" ? "is-error" : ""} ${
+          status === "success" ? "is-success" : ""
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button className="password-gate-close" onClick={onClose} aria-label="닫기">
           ×
         </button>
@@ -54,7 +67,7 @@ export default function PasswordGate({
             <span key={i} className={`password-gate-dot ${value.length > i ? "filled" : ""}`} />
           ))}
         </div>
-        <p className={`password-gate-error ${error ? "visible" : ""}`}>비밀번호가 틀렸어요!</p>
+        <p className={`password-gate-error ${status === "error" ? "visible" : ""}`}>비밀번호가 틀렸어요!</p>
         <div className="password-gate-keypad">
           {KEYS.map((k, i) => (
             <button

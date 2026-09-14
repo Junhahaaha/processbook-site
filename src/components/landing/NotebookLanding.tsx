@@ -26,10 +26,17 @@ function frontFacingTarget(current: number, slotAngle: number) {
   return current + diff;
 }
 
+// How long the 3D unlock sequence (other notebooks sinking away, the
+// unlocked one zooming toward camera) gets to play before the actual page
+// navigation fires — matches roughly what the per-frame lerps in Notebook
+// need to visually settle.
+const UNLOCK_NAVIGATE_MS = 900;
+
 export default function NotebookLanding({ subjects }: { subjects: NotebookSubjectData[] }) {
   const router = useRouter();
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [passwordSlug, setPasswordSlug] = useState<string | null>(null);
+  const [unlockingIndex, setUnlockingIndex] = useState<number | null>(null);
   const currentAngleRef = useRef(0);
   const angularVelocityRef = useRef(0);
   const dragStateRef = useRef<DragState>({ active: false, liveAngle: 0 });
@@ -75,6 +82,15 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
   const handleUnfocus = useCallback(() => {
     setFocusedIndex(null);
   }, []);
+
+  const handleUnlock = useCallback(
+    (slug: string) => {
+      const idx = subjects.findIndex((s) => s.slug === slug);
+      setUnlockingIndex(idx);
+      setTimeout(() => router.push(`/${slug}`), UNLOCK_NAVIGATE_MS);
+    },
+    [subjects, router]
+  );
 
   const activeSubject = passwordSlug ? subjects.find((s) => s.slug === passwordSlug) : undefined;
 
@@ -125,6 +141,8 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
                 slotAngle={slotAngle(i)}
                 isFocused={focusedIndex === i}
                 anyFocused={focusedIndex !== null}
+                isUnlocking={unlockingIndex === i}
+                anyUnlocking={unlockingIndex !== null}
                 velocityRef={angularVelocityRef}
                 dragMovedRef={dragMovedRef}
                 onSelect={handleSelect}
@@ -144,7 +162,7 @@ export default function NotebookLanding({ subjects }: { subjects: NotebookSubjec
           subjectSlug={activeSubject.slug}
           subjectName={activeSubject.name}
           onClose={() => setPasswordSlug(null)}
-          onCorrect={() => router.push(`/${activeSubject.slug}`)}
+          onCorrect={() => handleUnlock(activeSubject.slug)}
         />
       )}
     </div>

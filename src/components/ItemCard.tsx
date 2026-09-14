@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CSSProperties, PointerEvent, ReactNode, TransitionEvent } from "react";
+import { springStep } from "@/lib/spring";
 
 // Cards double as draggable notes: a plain click does nothing, a drag moves
 // the note around (session-only — no persistence, resets on reload), and a
@@ -10,6 +11,17 @@ import type { CSSProperties, PointerEvent, ReactNode, TransitionEvent } from "re
 // classic "was that a click or the start of a drag" ambiguity entirely.
 const DRAG_THRESHOLD = 4;
 const TILT_MAX = 9;
+
+// "Pinned note knocked by a passing cursor" / "pendulum swinging while
+// dragged" — both are the same underdamped rotational spring, just fed an
+// impulse from different sources (a brush of the cursor vs. the drag
+// itself). Underdamped so it overshoots and settles with a little sway
+// ("천천히 멈춘다") instead of snapping straight back to 0.
+const SWING_STIFFNESS = 90;
+const SWING_DAMPING = 6;
+const SWING_IMPULSE = 0.16; // deg/s of swing velocity added per px of cursor travel
+const SWING_VELOCITY_MAX = 50;
+const SWING_SETTLE_EPSILON = 0.02;
 
 export default function ItemCard({
   href,
@@ -34,11 +46,19 @@ export default function ItemCard({
   const t = useRef({ dragX: 0, dragY: 0, tiltX: 0, tiltY: 0, scale: 1 });
   const dragStart = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null);
   const justDragged = useRef(false);
+  const swing = useRef({ angle: 0, velocity: 0 });
+  const swingRaf = useRef<number | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setSettled(true), entranceDelay);
     return () => clearTimeout(timer);
   }, [entranceDelay]);
+
+  useEffect(() => {
+    return () => {
+      if (swingRaf.current != null) cancelAnimationFrame(swingRaf.current);
+    };
+  }, []);
 
   function applyTransform() {
     const el = ref.current;
@@ -51,7 +71,37 @@ export default function ItemCard({
     // absolutely-positioned, masked geometry was the root cause of a real
     // bug where a card's feedback clip rendered oversized and could bleed
     // onto a different card entirely.
-    el.style.transform = `translate(${s.dragX}px, ${s.dragY}px) perspective(800px) rotate(${baseRotation}deg) rotateX(${s.tiltX}deg) rotateY(${s.tiltY}deg) scale(${s.scale})`;
+    const rotation = baseRotation + swing.current.angle;
+    el.style.transform = `translate(${s.dragX}px, ${s.dragY}px) perspective(800px) rotate(${rotation}deg) rotateX(${s.tiltX}deg) rotateY(${s.tiltY}deg) scale(${s.scale})`;
+  }
+
+  // Nudges the swing spring with an impulse proportional to how far the
+  // cursor moved this event, then (re)starts the settle loop if it isn't
+  // already running. One mechanism serves both the hover "poke" and the
+  // drag "pendulum" — only the trigger differs.
+  function kickSwing(dx: number) {
+    if (dx === 0) return;
+    swing.current.velocity = Math.max(
+      -SWING_VELOCITY_MAX,
+      Math.min(SWING_VELOCITY_MAX, swing.current.velocity + dx * SWING_IMPULSE)
+    );
+    if (swingRaf.current != null) return;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      const stepped = springStep(swing.current.angle, swing.current.velocity, 0, SWING_STIFFNESS, SWING_DAMPING, dt);
+      swing.current = { angle: stepped.value, velocity: stepped.velocity };
+      applyTransform();
+      if (Math.abs(stepped.value) > SWING_SETTLE_EPSILON || Math.abs(stepped.velocity) > SWING_SETTLE_EPSILON) {
+        swingRaf.current = requestAnimationFrame(tick);
+      } else {
+        swing.current = { angle: 0, velocity: 0 };
+        swingRaf.current = null;
+        applyTransform();
+      }
+    };
+    swingRaf.current = requestAnimationFrame(tick);
   }
 
   function handleTransitionEnd(e: TransitionEvent<HTMLAnchorElement>) {
@@ -81,6 +131,9 @@ export default function ItemCard({
       if (justDragged.current) {
         t.current.dragX = dragStart.current.originX + dx;
         t.current.dragY = dragStart.current.originY + dy;
+        // dragged like a note on a string: the card lags into a pendulum
+        // swing off the drag motion rather than staying rigidly aligned.
+        kickSwing(e.movementX);
         applyTransform();
       }
       return;
@@ -93,6 +146,8 @@ export default function ItemCard({
     t.current.tiltX = -py * TILT_MAX;
     t.current.tiltY = px * TILT_MAX;
     t.current.scale = 1.025;
+    // a passing cursor "knocks" the pinned card in its direction of travel.
+    kickSwing(e.movementX);
     applyTransform();
   }
 

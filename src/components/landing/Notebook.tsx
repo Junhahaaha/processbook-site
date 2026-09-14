@@ -6,12 +6,18 @@ import * as THREE from "three";
 import NotebookPlaceholder from "./NotebookPlaceholder";
 import NotebookModel from "./NotebookModel";
 import BookmarkTab, { layoutBookmarks } from "./BookmarkTab";
-import { springStep } from "./spring";
+import { springStep } from "@/lib/spring";
 import type { NotebookSubjectData } from "./types";
 
 const ACCENTS = ["#2f5d50", "#3f7cc0", "#c0563f", "#8a5fc7"];
 export const RADIUS = 2.3;
 const FOCUS_PUSH = 1.4;
+// Correct password: this notebook pushes hard toward the camera (feels like
+// zooming into the screen) while every other one sinks away below frame.
+const UNLOCK_PUSH = 2.7;
+const UNLOCK_SCALE = 1.85;
+const UNLOCK_LERP = 0.07;
+const SINK_Y = -5.5;
 const MAX_DT = 0.05;
 
 // Underdamped so the lean overshoots 0 and settles with a little sway
@@ -29,6 +35,8 @@ export default function Notebook({
   slotAngle,
   isFocused,
   anyFocused,
+  isUnlocking,
+  anyUnlocking,
   velocityRef,
   dragMovedRef,
   onSelect,
@@ -39,6 +47,8 @@ export default function Notebook({
   slotAngle: number;
   isFocused: boolean;
   anyFocused: boolean;
+  isUnlocking: boolean;
+  anyUnlocking: boolean;
   velocityRef: React.RefObject<number>;
   dragMovedRef: React.RefObject<boolean>;
   onSelect: (index: number) => void;
@@ -60,12 +70,25 @@ export default function Notebook({
     const g = radial.current;
     if (!g) return;
 
-    const targetZ = isFocused ? RADIUS + FOCUS_PUSH : RADIUS;
-    const targetScale = isFocused ? 1.05 : anyFocused ? 0.7 : 1;
-    const targetOpacity = anyFocused && !isFocused ? 0.15 : 1;
+    const targetZ = isUnlocking
+      ? RADIUS + FOCUS_PUSH + UNLOCK_PUSH
+      : isFocused
+        ? RADIUS + FOCUS_PUSH
+        : RADIUS;
+    const targetScale = isUnlocking ? UNLOCK_SCALE : isFocused ? 1.05 : anyFocused ? 0.7 : 1;
+    const targetY = anyUnlocking && !isUnlocking ? SINK_Y : 0;
+    const targetOpacity = isUnlocking
+      ? 1
+      : anyUnlocking
+        ? 0
+        : anyFocused && !isFocused
+          ? 0.15
+          : 1;
+    const zoomLerp = isUnlocking ? UNLOCK_LERP : 0.15;
 
-    g.position.z += (targetZ - g.position.z) * 0.15;
-    g.scale.setScalar(g.scale.x + (targetScale - g.scale.x) * 0.15);
+    g.position.z += (targetZ - g.position.z) * zoomLerp;
+    g.position.y += (targetY - g.position.y) * 0.1;
+    g.scale.setScalar(g.scale.x + (targetScale - g.scale.x) * zoomLerp);
 
     g.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -125,6 +148,7 @@ export default function Notebook({
 
   function handleClick(e: ThreeEvent<MouseEvent>) {
     e.stopPropagation();
+    if (anyUnlocking) return; // mid unlock-sequence, ignore further input
     if (dragStart.current?.moved) return; // a drag-to-examine gesture, not a click
     if (anyFocused && !isFocused) return;
     if (!isFocused) {
@@ -135,12 +159,12 @@ export default function Notebook({
 
   function handleDoubleClick(e: ThreeEvent<MouseEvent>) {
     e.stopPropagation();
-    if (!isFocused) return;
+    if (anyUnlocking || !isFocused) return;
     onOpenPassword(subject.slug);
   }
 
   function handlePointerDown(e: ThreeEvent<PointerEvent>) {
-    if (!isFocused) return;
+    if (!isFocused || anyUnlocking) return;
     e.stopPropagation();
     dragStart.current = { x: e.clientX, y: e.clientY, moved: false, lastTime: performance.now() };
     examineVelocity.current.x = 0;

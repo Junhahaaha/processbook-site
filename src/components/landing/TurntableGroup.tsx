@@ -1,7 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { springStep } from "./spring";
+import { springStep } from "@/lib/spring";
 
 const TWO_PI = Math.PI * 2;
 const SETTLE_STIFFNESS = 22;
