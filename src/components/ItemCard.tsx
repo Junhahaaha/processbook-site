@@ -26,6 +26,11 @@ const SWING_VELOCITY_MAX = 62;
 // the same cap a slow hover-by can already reach.
 const DRAG_SWING_IMPULSE = 0.5;
 const DRAG_SWING_VELOCITY_MAX = 150;
+// The instant you let go (or throw it), the swing switches to this much
+// stiffer/firmer spring — it should "stick" with a quick, decisive snap
+// rather than keep lazily wobbling the way the live drag does.
+const RELEASE_SWING_STIFFNESS = 260;
+const RELEASE_SWING_DAMPING = 14;
 const SWING_SETTLE_EPSILON = 0.02;
 
 export default function ItemCard({
@@ -51,6 +56,7 @@ export default function ItemCard({
   const t = useRef({ dragX: 0, dragY: 0, tiltX: 0, tiltY: 0, scale: 1 });
   const dragStart = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null);
   const justDragged = useRef(false);
+  const justReleasedFromDrag = useRef(false);
   const swing = useRef({ angle: 0, velocity: 0 });
   const swingRaf = useRef<number | null>(null);
 
@@ -95,7 +101,11 @@ export default function ItemCard({
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      const stepped = springStep(swing.current.angle, swing.current.velocity, 0, SWING_STIFFNESS, SWING_DAMPING, dt);
+      // Re-checked every frame (not just at kick time) so a release mid-swing
+      // switches physics immediately, right when the pointer lifts.
+      const stiffness = justReleasedFromDrag.current ? RELEASE_SWING_STIFFNESS : SWING_STIFFNESS;
+      const damping = justReleasedFromDrag.current ? RELEASE_SWING_DAMPING : SWING_DAMPING;
+      const stepped = springStep(swing.current.angle, swing.current.velocity, 0, stiffness, damping, dt);
       swing.current = { angle: stepped.value, velocity: stepped.velocity };
       applyTransform();
       if (Math.abs(stepped.value) > SWING_SETTLE_EPSILON || Math.abs(stepped.velocity) > SWING_SETTLE_EPSILON) {
@@ -103,6 +113,7 @@ export default function ItemCard({
       } else {
         swing.current = { angle: 0, velocity: 0 };
         swingRaf.current = null;
+        justReleasedFromDrag.current = false;
         applyTransform();
       }
     };
@@ -115,6 +126,14 @@ export default function ItemCard({
 
   function handlePointerDown(e: PointerEvent<HTMLAnchorElement>) {
     if (e.button !== 0) return;
+    const el = ref.current;
+    if (el) {
+      // Pivot the rotation (base tilt, hover tilt, and the swing) around
+      // wherever the card was actually grabbed, not its center — offsetX/Y
+      // are already local to the element and transform-corrected by the
+      // browser, so this is right even though the card sits rotated.
+      el.style.transformOrigin = `${e.nativeEvent.offsetX}px ${e.nativeEvent.offsetY}px`;
+    }
     dragStart.current = { x: e.clientX, y: e.clientY, originX: t.current.dragX, originY: t.current.dragY };
     justDragged.current = false;
     ref.current?.setPointerCapture(e.pointerId);
@@ -167,6 +186,12 @@ export default function ItemCard({
 
   function handlePointerUp() {
     if (!dragStart.current) return;
+    // Only worth flagging if there's an active swing loop to actually pick
+    // it up and (later) clear it — otherwise the card was already at rest
+    // and this flag would just stick, wrongly stiffening the next hover poke.
+    if (justDragged.current && swingRaf.current != null) {
+      justReleasedFromDrag.current = true;
+    }
     dragStart.current = null;
     const el = ref.current;
     if (el) {
