@@ -32,11 +32,12 @@ const DRAG_SWING_VELOCITY_MAX = 150;
 const RELEASE_SWING_STIFFNESS = 260;
 const RELEASE_SWING_DAMPING = 14;
 const SWING_SETTLE_EPSILON = 0.02;
-// A real card's weight resists rotating purely around the exact pixel
-// pinched — its mass is spread through the whole card, centered near its
-// middle. The pivot is the grab point pulled this fraction of the way back
-// toward the card's own center, instead of sitting right on the fingertip.
-const CENTER_OF_MASS_PULL = 0.35;
+
+// Wrap an angle in degrees to (-180, 180].
+function wrapDegrees(deg: number): number {
+  const wrapped = ((deg + 180) % 360 + 360) % 360 - 180;
+  return wrapped === -180 ? 180 : wrapped;
+}
 
 export default function ItemCard({
   href,
@@ -64,6 +65,11 @@ export default function ItemCard({
   const justReleasedFromDrag = useRef(false);
   const swing = useRef({ angle: 0, velocity: 0 });
   const swingRaf = useRef<number | null>(null);
+  // While actively held, the swing doesn't relax back to 0 — it relaxes
+  // toward the angle where the card's center of mass hangs below the grab
+  // point, like a real pendulum. Recomputed once per grab (the held point
+  // doesn't move relative to the card during one drag).
+  const dragGravityTarget = useRef(0);
 
   useEffect(() => {
     const timer = setTimeout(() => setSettled(true), entranceDelay);
@@ -91,38 +97,50 @@ export default function ItemCard({
     el.style.transform = `translate(${s.dragX}px, ${s.dragY}px) perspective(800px) rotate(${rotation}deg) rotateX(${s.tiltX}deg) rotateY(${s.tiltY}deg) scale(${s.scale})`;
   }
 
-  // Nudges the swing spring with an impulse proportional to how far the
-  // cursor moved this event, then (re)starts the settle loop if it isn't
-  // already running. One mechanism serves both the hover "poke" and the
-  // drag "pendulum" — only the trigger (and how hard it hits) differs.
-  function kickSwing(dx: number, impulse: number = SWING_IMPULSE, velocityMax: number = SWING_VELOCITY_MAX) {
-    if (dx === 0) return;
-    swing.current.velocity = Math.max(
-      -velocityMax,
-      Math.min(velocityMax, swing.current.velocity + dx * impulse)
-    );
+  // Runs the settle loop if it isn't already running — used both after an
+  // impulse kick and right on grab, since gravity should start pulling the
+  // card toward its equilibrium the moment it's held, even before the
+  // cursor moves at all.
+  function ensureSwingLoop() {
     if (swingRaf.current != null) return;
     let last = performance.now();
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
       // Re-checked every frame (not just at kick time) so a release mid-swing
-      // switches physics immediately, right when the pointer lifts.
+      // switches physics immediately, right when the pointer lifts. While
+      // actively held, the spring relaxes toward the gravity target instead
+      // of flat (0); once let go, it always relaxes back to flat.
+      const dragging = dragStart.current != null;
+      const target = dragging ? dragGravityTarget.current : 0;
       const stiffness = justReleasedFromDrag.current ? RELEASE_SWING_STIFFNESS : SWING_STIFFNESS;
       const damping = justReleasedFromDrag.current ? RELEASE_SWING_DAMPING : SWING_DAMPING;
-      const stepped = springStep(swing.current.angle, swing.current.velocity, 0, stiffness, damping, dt);
+      const stepped = springStep(swing.current.angle, swing.current.velocity, target, stiffness, damping, dt);
       swing.current = { angle: stepped.value, velocity: stepped.velocity };
       applyTransform();
-      if (Math.abs(stepped.value) > SWING_SETTLE_EPSILON || Math.abs(stepped.velocity) > SWING_SETTLE_EPSILON) {
+      if (Math.abs(stepped.value - target) > SWING_SETTLE_EPSILON || Math.abs(stepped.velocity) > SWING_SETTLE_EPSILON) {
         swingRaf.current = requestAnimationFrame(tick);
       } else {
-        swing.current = { angle: 0, velocity: 0 };
+        swing.current = { angle: target, velocity: 0 };
         swingRaf.current = null;
         justReleasedFromDrag.current = false;
         applyTransform();
       }
     };
     swingRaf.current = requestAnimationFrame(tick);
+  }
+
+  // Nudges the swing spring with an impulse proportional to how far the
+  // cursor moved this event, then ensures the settle loop is running. One
+  // mechanism serves both the hover "poke" and the drag "pendulum" — only
+  // the trigger (and how hard it hits) differs.
+  function kickSwing(dx: number, impulse: number = SWING_IMPULSE, velocityMax: number = SWING_VELOCITY_MAX) {
+    if (dx === 0) return;
+    swing.current.velocity = Math.max(
+      -velocityMax,
+      Math.min(velocityMax, swing.current.velocity + dx * impulse)
+    );
+    ensureSwingLoop();
   }
 
   function handleTransitionEnd(e: TransitionEvent<HTMLAnchorElement>) {
@@ -136,20 +154,46 @@ export default function ItemCard({
       // Pivot the rotation (base tilt, hover tilt, and the swing) around
       // wherever the card was actually grabbed, not its center — offsetX/Y
       // are already local to the element and transform-corrected by the
-      // browser, so this is right even though the card sits rotated. Pulled
-      // partway toward the card's own center for a weighted, not
-      // fingertip-thin, feel (see CENTER_OF_MASS_PULL).
+      // browser, so this is right even though the card sits rotated.
       const grabX = e.nativeEvent.offsetX;
       const grabY = e.nativeEvent.offsetY;
+      el.style.transformOrigin = `${grabX}px ${grabY}px`;
+
+      // Gravity target: the angle that swings the center of mass to hang
+      // directly below the grab point. gx/gy is the grab point's offset
+      // from center; the center of mass sits at -gx/-gy relative to the
+      // grab point, and we solve for the rotation that points that vector
+      // straight down (CSS's rotate() is clockwise-positive in screen
+      // (Y-down) coordinates, so this is a plain 2D rotation solve in
+      // screen space, not "true" 3D gravity). Scaled by how far off-center
+      // the grab is — grabbing near the center has barely any lever arm,
+      // so it shouldn't swing much even though the target angle formula is
+      // still technically defined there.
       const centerX = el.offsetWidth / 2;
       const centerY = el.offsetHeight / 2;
-      const originX = grabX + (centerX - grabX) * CENTER_OF_MASS_PULL;
-      const originY = grabY + (centerY - grabY) * CENTER_OF_MASS_PULL;
-      el.style.transformOrigin = `${originX}px ${originY}px`;
+      const gx = grabX - centerX;
+      const gy = grabY - centerY;
+      const lever = Math.hypot(gx, gy);
+      const maxLever = Math.hypot(centerX, centerY);
+      if (lever > 0.5 && maxLever > 0) {
+        const equilibrium = 90 - (Math.atan2(-gy, -gx) * 180) / Math.PI;
+        dragGravityTarget.current = wrapDegrees(equilibrium) * Math.min(lever / maxLever, 1);
+      } else {
+        dragGravityTarget.current = 0;
+      }
     }
     dragStart.current = { x: e.clientX, y: e.clientY, originX: t.current.dragX, originY: t.current.dragY };
     justDragged.current = false;
-    ref.current?.setPointerCapture(e.pointerId);
+    // Gravity should start pulling the instant it's held, not only once the
+    // cursor first moves — and must run regardless of what setPointerCapture
+    // below does, so it comes first.
+    ensureSwingLoop();
+    try {
+      ref.current?.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignored: capture can legitimately fail (e.g. the pointer was
+      // already released) without affecting the drag/swing logic above.
+    }
   }
 
   function handlePointerMove(e: PointerEvent<HTMLAnchorElement>) {
@@ -199,13 +243,16 @@ export default function ItemCard({
 
   function handlePointerUp() {
     if (!dragStart.current) return;
-    // Only worth flagging if there's an active swing loop to actually pick
-    // it up and (later) clear it — otherwise the card was already at rest
-    // and this flag would just stick, wrongly stiffening the next hover poke.
-    if (justDragged.current && swingRaf.current != null) {
+    dragStart.current = null;
+    // Anything left to snap back from — a live pendulum swing, or just
+    // having settled into the gravity-tilted hang while held still (the
+    // loop stops once it reaches that target, so releasing needs to kick
+    // it awake again to chase the new, flat target) — gets the firm
+    // "stick" treatment.
+    if (Math.abs(swing.current.angle) > SWING_SETTLE_EPSILON || Math.abs(swing.current.velocity) > SWING_SETTLE_EPSILON) {
       justReleasedFromDrag.current = true;
     }
-    dragStart.current = null;
+    ensureSwingLoop();
     const el = ref.current;
     if (el) {
       el.style.transitionProperty = "transform, opacity";
