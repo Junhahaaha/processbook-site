@@ -19,8 +19,13 @@ const TILT_MAX = 9;
 // ("천천히 멈춘다") instead of snapping straight back to 0.
 const SWING_STIFFNESS = 90;
 const SWING_DAMPING = 6;
-const SWING_IMPULSE = 0.2; // deg/s of swing velocity added per px of cursor travel
+const SWING_IMPULSE = 0.2; // deg/s of swing velocity added per px of cursor travel (hover poke)
 const SWING_VELOCITY_MAX = 62;
+// Actively dragging is a much stronger coupling than a passing hover — a
+// fast flick should whip the card noticeably harder, not just plateau at
+// the same cap a slow hover-by can already reach.
+const DRAG_SWING_IMPULSE = 0.5;
+const DRAG_SWING_VELOCITY_MAX = 150;
 const SWING_SETTLE_EPSILON = 0.02;
 
 export default function ItemCard({
@@ -78,12 +83,12 @@ export default function ItemCard({
   // Nudges the swing spring with an impulse proportional to how far the
   // cursor moved this event, then (re)starts the settle loop if it isn't
   // already running. One mechanism serves both the hover "poke" and the
-  // drag "pendulum" — only the trigger differs.
-  function kickSwing(dx: number) {
+  // drag "pendulum" — only the trigger (and how hard it hits) differs.
+  function kickSwing(dx: number, impulse: number = SWING_IMPULSE, velocityMax: number = SWING_VELOCITY_MAX) {
     if (dx === 0) return;
     swing.current.velocity = Math.max(
-      -SWING_VELOCITY_MAX,
-      Math.min(SWING_VELOCITY_MAX, swing.current.velocity + dx * SWING_IMPULSE)
+      -velocityMax,
+      Math.min(velocityMax, swing.current.velocity + dx * impulse)
     );
     if (swingRaf.current != null) return;
     let last = performance.now();
@@ -132,8 +137,10 @@ export default function ItemCard({
         t.current.dragX = dragStart.current.originX + dx;
         t.current.dragY = dragStart.current.originY + dy;
         // dragged like a note on a string: the card lags into a pendulum
-        // swing off the drag motion rather than staying rigidly aligned.
-        kickSwing(e.movementX);
+        // swing off the drag motion rather than staying rigidly aligned —
+        // hit noticeably harder than a passing hover, and scaling further
+        // with how fast the drag itself is moving.
+        kickSwing(e.movementX, DRAG_SWING_IMPULSE, DRAG_SWING_VELOCITY_MAX);
         applyTransform();
       }
       return;
