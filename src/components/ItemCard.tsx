@@ -32,6 +32,11 @@ const DRAG_SWING_VELOCITY_MAX = 150;
 const RELEASE_SWING_STIFFNESS = 260;
 const RELEASE_SWING_DAMPING = 14;
 const SWING_SETTLE_EPSILON = 0.02;
+// A real card's weight resists rotating purely around the exact pixel
+// pinched — its mass is spread through the whole card, centered near its
+// middle. The pivot is the grab point pulled this fraction of the way back
+// toward the card's own center, instead of sitting right on the fingertip.
+const CENTER_OF_MASS_PULL = 0.35;
 
 export default function ItemCard({
   href,
@@ -131,8 +136,16 @@ export default function ItemCard({
       // Pivot the rotation (base tilt, hover tilt, and the swing) around
       // wherever the card was actually grabbed, not its center — offsetX/Y
       // are already local to the element and transform-corrected by the
-      // browser, so this is right even though the card sits rotated.
-      el.style.transformOrigin = `${e.nativeEvent.offsetX}px ${e.nativeEvent.offsetY}px`;
+      // browser, so this is right even though the card sits rotated. Pulled
+      // partway toward the card's own center for a weighted, not
+      // fingertip-thin, feel (see CENTER_OF_MASS_PULL).
+      const grabX = e.nativeEvent.offsetX;
+      const grabY = e.nativeEvent.offsetY;
+      const centerX = el.offsetWidth / 2;
+      const centerY = el.offsetHeight / 2;
+      const originX = grabX + (centerX - grabX) * CENTER_OF_MASS_PULL;
+      const originY = grabY + (centerY - grabY) * CENTER_OF_MASS_PULL;
+      el.style.transformOrigin = `${originX}px ${originY}px`;
     }
     dragStart.current = { x: e.clientX, y: e.clientY, originX: t.current.dragX, originY: t.current.dragY };
     justDragged.current = false;

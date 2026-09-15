@@ -188,21 +188,11 @@ h3 {
   font-weight: 300;
 }
 
-/* business card: bottom position kept, text switched to black — scrim
-   flipped to a light gradient so black text stays legible regardless of
-   the art underneath. */
+/* business card: bottom position kept, text switched to black. */
 .item-card-skin-business-card {
   justify-content: flex-end;
   padding: 16px 18px;
   color: #000;
-}
-.item-card-skin-business-card::before {
-  content: "";
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 60%;
-  border-radius: inherit;
-  background: linear-gradient(to top, rgba(255, 255, 255, 0.75), transparent);
 }
 
 /* ticket: center-left, clear of a typical stub/QR/printed-detail layout. */
