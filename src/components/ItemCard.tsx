@@ -70,6 +70,11 @@ export default function ItemCard({
   // point, like a real pendulum. Recomputed once per grab (the held point
   // doesn't move relative to the card during one drag).
   const dragGravityTarget = useRef(0);
+  // The transform-origin actually in effect right now (local, untransformed
+  // px), so a new grab can compensate for moving it — see handlePointerDown.
+  // null until the first grab, when it defaults to the box's own center
+  // (the CSS initial value, "50% 50%").
+  const currentOrigin = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setSettled(true), entranceDelay);
@@ -157,7 +162,39 @@ export default function ItemCard({
       // browser, so this is right even though the card sits rotated.
       const grabX = e.nativeEvent.offsetX;
       const grabY = e.nativeEvent.offsetY;
+
+      // Moving transform-origin mid-rotation is not visually a no-op: the
+      // same rotate() angle traces a different arc around a different
+      // pivot, so switching the origin outright made the card instantly
+      // jump to a different screen position the moment it was re-grabbed
+      // (looking like it snapped back toward flat before swinging out
+      // again to the new pivot). Compensate by shifting the translate so
+      // the box stays exactly where it currently is at the instant of the
+      // switch — only *then* does the spring start animating the angle
+      // toward the new grab's target, with no jump to animate away from.
+      // For a rotation R by the current angle (plus current hover scale)
+      // around old origin O, switching to new origin O' needs a
+      // translate delta of -(I - R) * (O' - O) to hold the box fixed.
+      // Doing this correction through the lingering CSS transition left on
+      // from the last release (transitionProperty stays "transform,
+      // opacity" until a real drag starts) would smooth this one large,
+      // supposed-to-be-invisible jump into a very visible 150ms slide
+      // through the wrong in-between state — turn it off first so the
+      // correction actually lands instantly, same frame.
+      el.style.transitionProperty = "none";
+      const prevOrigin = currentOrigin.current ?? { x: el.offsetWidth / 2, y: el.offsetHeight / 2 };
+      const currentAngleRad = ((baseRotation + swing.current.angle) * Math.PI) / 180;
+      const s = t.current.scale;
+      const cos = Math.cos(currentAngleRad) * s;
+      const sin = Math.sin(currentAngleRad) * s;
+      const dOx = grabX - prevOrigin.x;
+      const dOy = grabY - prevOrigin.y;
+      t.current.dragX -= dOx - (dOx * cos - dOy * sin);
+      t.current.dragY -= dOy - (dOx * sin + dOy * cos);
+
       el.style.transformOrigin = `${grabX}px ${grabY}px`;
+      currentOrigin.current = { x: grabX, y: grabY };
+      applyTransform();
 
       // Gravity target: the angle that swings the center of mass to hang
       // directly below the grab point. gx/gy is the grab point's offset
