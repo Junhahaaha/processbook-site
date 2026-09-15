@@ -107,12 +107,12 @@ export default function ItemCard({
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      // Re-checked every frame (not just at kick time) so a release mid-swing
-      // switches physics immediately, right when the pointer lifts. While
-      // actively held, the spring relaxes toward the gravity target instead
-      // of flat (0); once let go, it always relaxes back to flat.
-      const dragging = dragStart.current != null;
-      const target = dragging ? dragGravityTarget.current : 0;
+      // dragGravityTarget is the resting angle from here on, not just while
+      // held — releasing doesn't revert to flat, it leaves the card hanging
+      // wherever gravity settled it (or exactly flat, if the last grab was
+      // near enough to center that the target is still 0). A later grab
+      // overwrites it with a freshly computed target for the new grab point.
+      const target = dragGravityTarget.current;
       const stiffness = justReleasedFromDrag.current ? RELEASE_SWING_STIFFNESS : SWING_STIFFNESS;
       const damping = justReleasedFromDrag.current ? RELEASE_SWING_DAMPING : SWING_DAMPING;
       const stepped = springStep(swing.current.angle, swing.current.velocity, target, stiffness, damping, dt);
@@ -165,19 +165,26 @@ export default function ItemCard({
       // grab point, and we solve for the rotation that points that vector
       // straight down (CSS's rotate() is clockwise-positive in screen
       // (Y-down) coordinates, so this is a plain 2D rotation solve in
-      // screen space, not "true" 3D gravity). Scaled by how far off-center
-      // the grab is — grabbing near the center has barely any lever arm,
-      // so it shouldn't swing much even though the target angle formula is
-      // still technically defined there.
+      // screen space, not "true" 3D gravity). This is the FULL angle,
+      // un-scaled — a pendulum's resting angle only depends on the
+      // direction from pivot to center of mass, not on the lever length
+      // (that only affects how fast it gets there, which the spring's
+      // constant stiffness already approximates well enough here). A
+      // previous version scaled the angle down by how close the grab was
+      // to the exact corner, which was wrong: it meant only a literal
+      // corner grab ever reached the true equilibrium, so a side-edge grab
+      // (a shorter, purely-horizontal-or-vertical lever) stopped partway,
+      // and a bottom-edge grab never reached the full 180° flip it should.
+      // Only truly near-center grabs (lever ~0) fall back to 0, since the
+      // direction is undefined right at the center of mass itself.
       const centerX = el.offsetWidth / 2;
       const centerY = el.offsetHeight / 2;
       const gx = grabX - centerX;
       const gy = grabY - centerY;
       const lever = Math.hypot(gx, gy);
-      const maxLever = Math.hypot(centerX, centerY);
-      if (lever > 0.5 && maxLever > 0) {
+      if (lever > 2) {
         const equilibrium = 90 - (Math.atan2(-gy, -gx) * 180) / Math.PI;
-        dragGravityTarget.current = wrapDegrees(equilibrium) * Math.min(lever / maxLever, 1);
+        dragGravityTarget.current = wrapDegrees(equilibrium);
       } else {
         dragGravityTarget.current = 0;
       }
@@ -244,12 +251,15 @@ export default function ItemCard({
   function handlePointerUp() {
     if (!dragStart.current) return;
     dragStart.current = null;
-    // Anything left to snap back from — a live pendulum swing, or just
-    // having settled into the gravity-tilted hang while held still (the
-    // loop stops once it reaches that target, so releasing needs to kick
-    // it awake again to chase the new, flat target) — gets the firm
-    // "stick" treatment.
-    if (Math.abs(swing.current.angle) > SWING_SETTLE_EPSILON || Math.abs(swing.current.velocity) > SWING_SETTLE_EPSILON) {
+    // If it hadn't finished converging on the gravity target yet (still
+    // actively swinging, or the loop had already stopped and needs waking
+    // back up), releasing gets the firm "stick" treatment to settle in
+    // quickly rather than keep wobbling. The target itself doesn't change
+    // on release — the card just stays hanging wherever it settles.
+    if (
+      Math.abs(swing.current.angle - dragGravityTarget.current) > SWING_SETTLE_EPSILON ||
+      Math.abs(swing.current.velocity) > SWING_SETTLE_EPSILON
+    ) {
       justReleasedFromDrag.current = true;
     }
     ensureSwingLoop();
