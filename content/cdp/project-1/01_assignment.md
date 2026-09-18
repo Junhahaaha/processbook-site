@@ -75,3 +75,9 @@ tags: [assignment]
 ### 레퍼런스 서칭
 https://www.behance.net/gallery/250986789/Wagle-Wagle-Playground?tracking_source=search_projects|space+design&l=104  
 https://www.behance.net/gallery/133290339/Design-of-Wayfinding-System-in-Mangrove-Ecological-Park?tracking_source=search_projects|park&l=12
+```feedback
+구체적인 개선 방향을 명확히 하기
+레퍼런스로부터 어떤식으로 진행할지를 계획하기.
+
+설득을 할 수 있도록 근거를 바탕으로 디자인하기
+```

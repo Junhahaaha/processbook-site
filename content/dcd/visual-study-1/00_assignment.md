@@ -61,52 +61,61 @@ AI 사용 X 직접 찍는다.
 
 ### 아이디어 기록
 
+![](/content/dcd/visual-study-1/V_1.png)
 **1. 이상한 식사 (Odd Meal)**  
-Medium shot + POV  
+Full shot + POV  
 Odd, Uncanny  
 The POV shows the perspective of someone eating a suspicious meal. There is nothing else on the table besides cherry tomatoes, and the tableware is framed to emphasize its strangeness.
 
+![](/content/dcd/visual-study-1/V_2.png)
 **2. 비장한 랜디 (Grim Randy)**  
-Low Angle + Close-up  
+Full shot + Eye Level
 Grand, Calm, Serious  
 The close-up and single light source draw the eye directly to the subject, while the low angle creates a sense of looking upward, intended to convey an imposing, grand feeling.
 
+![](/content/dcd/visual-study-1/V_3.png)
 **3. 도마 위 당근 (Carrot on the Cutting Board)**  
 Medium shot + Dutch Angle  
-Lively, Playful  
+Lively, Playful, Energetic
 The eye-level shot of carrots being cut on a cutting board was used to capture a sense of energy. The Dutch angle emphasizes the precarious moment just as the carrot is about to be cut.
 
+![](/content/dcd/visual-study-1/V_4.png)
 **4. 기계 벌레 (Mechanical Bug)**  
 Long shot + High Angle  
 Cute, Whimsical  
 The shot captures the entire electronic component, which resembles an insect, filling the frame. The high, looking-down angle was used to create a cute, whimsical feeling.
-
+![](/content/dcd/visual-study-1/V_5.png)
 **5. 쓸쓸한 랜디 (Lonely Randy)**  
-Over-the-Shoulder + Medium Close-up  
+Medium Long shot + Over the Shoulder
 Lonely, Solitary  
 The over-the-shoulder shot reveals the view outside the window to express the subject's solitude, while showing the character's full upper body to convey the situation they're in.
 
+![](/content/dcd/visual-study-1/V_6.png)
 **6. 소보로 행성 (Streusel Planet)**  
 Close-up + Eye-Level Angle  
 Mysterious, Unfamiliar
 The close-up of the bread's surface creates an unfamiliar feeling, while the eye-level placement makes it feel as though the viewer is peering closely at the bread right in front of them.
 
+![](/content/dcd/visual-study-1/V_7.png)
 **7. 공학관 고양이의 나른한 오후 (The Engineering Building Cat's Lazy Afternoon)**  
 Wide shot + High Angle  
 Peaceful, Warm
 The wide shot captures the cat's entire body lying in the grass. The high angle gives the sense of looking down over the scene.
 
+![](/content/dcd/visual-study-1/V_8.png)
 **8. 요리 하는중 (Cooking in Progress)**  
 Medium Shot + Over-the-Shoulder  
 Lively, Energetic  
 To convey a sense of liveliness, the shot mimics looking over the cook's shoulder. The subject was also intentionally blurred to suggest a feeling of motion.
 
+![](/content/dcd/visual-study-1/V_9.png)
 **9. 오래된 건물 (Old Building)**  
-Eye-Level Angle + Wide Shot  
-Mysterious, Warm  
+Eye Level Angle + Medium Long Shot
+Wonderous, Warm 
 The building was framed together with its surrounding environment to convey context. The eye-level angle was used to give the feeling that the subject is right there in front of the viewer.
 
+![](/content/dcd/visual-study-1/V_10.png)
 **10. 빵 냄새가 풍기는 곳 (A Place Filled with the Smell of Bread)**  
 High Angle + Wide Shot  
-Calm, Nostalgic  
-The shot was taken from a high position and wide framing to capture the bakery's interior all at once. Through this, it aimed to reveal the space's warm atmosphere.
+Energetic, Nostalgic
+The shot was taken from a high position and wide framing to capture the bakery's interior all at once. Through this, it aimed to reveal the space's atmosphere, which is lively and warm.
