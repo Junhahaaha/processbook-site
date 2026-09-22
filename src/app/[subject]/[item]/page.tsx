@@ -5,6 +5,7 @@ import { getAllItemSlugs, getItemDetail } from "@/lib/content.server";
 import { extractLinkCardUrls, fetchLinkMetaMap } from "@/lib/link-meta.server";
 import ProcessMarkdown from "@/components/markdown/ProcessMarkdown";
 import BookmarkDock from "@/components/bookmark/BookmarkDock";
+import FeedbackForm from "@/components/FeedbackForm";
 
 export function generateStaticParams() {
   return getAllItemSlugs().map(({ subject, item }) => ({ subject, item }));
@@ -67,6 +68,8 @@ export default async function ItemPage({
           </section>
         ))}
       </div>
+
+      <FeedbackForm subjectSlug={subjectSlug} itemSlug={itemSlug} />
 
       <BookmarkDock />
     </main>

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync-content": "node scripts/sync-content.mjs"
+    "sync-content": "node scripts/sync-content.mjs",
+    "pull-feedback": "node scripts/pull-feedback.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

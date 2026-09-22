@@ -305,6 +305,91 @@ h3 {
   margin: 0 0 14px;
 }
 
+/* -- web feedback form (submits into feedback-inbox/, see api/feedback) ---*/
+.feedback-form-toggle {
+  margin: 40px 0 0;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px dashed var(--line-strong);
+  background: none;
+  color: var(--ink-soft);
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.feedback-form-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.feedback-form-card {
+  margin: 40px 0 0;
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+}
+.feedback-form-title {
+  margin: 0 0 10px;
+  font-weight: 700;
+  font-size: 14.5px;
+}
+.feedback-form-textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+.feedback-form-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  align-items: center;
+}
+.feedback-form-code {
+  width: 110px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  letter-spacing: 2px;
+}
+.feedback-form-submit {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--surface);
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.feedback-form-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.feedback-form-cancel {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--ink-soft);
+  font-family: var(--font-sans), sans-serif;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.feedback-form-error {
+  margin: 8px 0 0;
+  color: #c0563f;
+  font-size: 12.5px;
+}
+
 /* -- generic block card wrapper --------------------------------------------*/
 .block-card {
   margin: 20px 0;
