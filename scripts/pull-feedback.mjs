@@ -130,8 +130,6 @@ for (const { subject, item, date, entries } of groups.values()) {
       "tags: [web-feedback]",
       "---",
       "",
-      "# 웹에서 남긴 피드백",
-      "",
       "",
     ].join("\n");
     fs.writeFileSync(noteFile, frontmatter + feedbackBlocks + "\n", "utf-8");
