@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import BookmarkIcon, { BOOKMARK_PATH } from "@/components/BookmarkIcon";
+import BookmarkIcon, { bookmarkSvgMarkup } from "@/components/BookmarkIcon";
 import { colorForIndex } from "@/lib/colors";
 
 type Tool = "highlight" | "bookmark";
@@ -16,9 +16,11 @@ type Pending = {
   // succeeds, so the mark only appears after it's actually been recorded.
   range?: Range;
   // Kept only for "bookmark": where to drop the marker once submitted, and
-  // the color it'll show as (picked up-front so the popover can preview it).
+  // the color/variant it'll show as (picked up-front so the popover can
+  // preview it).
   anchorEl?: HTMLElement;
   color?: string;
+  variant?: number;
 };
 
 const BLOCK_SELECTOR = "p, li, h1, h2, h3, h4, blockquote, td, figcaption";
@@ -124,8 +126,10 @@ export default function AnnotationToolbar({
 
       const block = targetEl.closest<HTMLElement>(BLOCK_SELECTOR) ?? proseEl;
       const quote = truncate(block.innerText || "", 120);
-      const color = colorForIndex(bookmarkCounter.current++, `${subjectSlug}/${itemSlug}`);
-      setPending({ tool: "bookmark", quote, x: e.clientX, y: e.clientY, anchorEl: block, color });
+      const n = bookmarkCounter.current++;
+      const color = colorForIndex(n, `${subjectSlug}/${itemSlug}`);
+      const variant = n % 3;
+      setPending({ tool: "bookmark", quote, x: e.clientX, y: e.clientY, anchorEl: block, color, variant });
       setStatus("idle");
       setErrorMsg("");
     }
@@ -188,12 +192,12 @@ export default function AnnotationToolbar({
         if (!block.style.position) block.style.position = "relative";
         block.setAttribute("data-feedback-block", "");
         block.dataset.color = pending.color;
+        block.dataset.variant = String(pending.variant ?? 0);
         block.style.setProperty("--feedback-color", pending.color);
 
         const marker = document.createElement("span");
         marker.className = "user-bookmark-margin-icon";
-        marker.style.color = pending.color;
-        marker.innerHTML = `<svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="${BOOKMARK_PATH}"/></svg>`;
+        marker.innerHTML = bookmarkSvgMarkup(pending.color, pending.variant ?? 0);
         block.appendChild(marker);
       }
       closePopover();
@@ -240,8 +244,12 @@ export default function AnnotationToolbar({
             <p className="annotation-popover-title">
               {pending.tool === "highlight" ? "형광펜으로 표시" : "책갈피 남기기"}
             </p>
-            {pending.tool === "bookmark" && (
-              <BookmarkIcon color={pending.color} className="annotation-popover-icon" />
+            {pending.tool === "bookmark" && pending.color && (
+              <BookmarkIcon
+                color={pending.color}
+                variant={pending.variant}
+                className="annotation-popover-icon"
+              />
             )}
           </div>
           <blockquote className="annotation-popover-quote">{pending.quote}</blockquote>

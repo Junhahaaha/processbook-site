@@ -4,5 +4,5 @@
 const SPACING = 20; // px between clip centers
 
 export function layoutClips(count: number) {
-  return Array.from({ length: count }, (_, i) => ({ offsetX: i * SPACING }));
+  return Array.from({ length: count }, (_, i) => ({ offsetX: i * SPACING, variant: i % 3 }));
 }

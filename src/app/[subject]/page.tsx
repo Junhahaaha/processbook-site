@@ -49,7 +49,7 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
             // multicol column-item now; the card fills it.
             <div key={item.slug} className="item-card-wrap" style={{ marginTop: offsetY }}>
               {clips.map((c, ci) => (
-                <CardClip key={ci} color={bookmarkColors[ci]} offsetX={c.offsetX} />
+                <CardClip key={ci} color={bookmarkColors[ci]} offsetX={c.offsetX} variant={c.variant} />
               ))}
               <ItemCard
                 href={`/${subjectSlug}/${item.slug}`}

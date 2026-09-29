@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { BOOKMARK_PATH } from "@/components/BookmarkIcon";
-
-const BOOKMARK_SVG = `<svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="${BOOKMARK_PATH}"/></svg>`;
+import { bookmarkSvgMarkup } from "@/components/BookmarkIcon";
 
 const SCALE_MIN = 0.6;
 const SCALE_MAX = 1.5;
@@ -74,8 +72,7 @@ export default function BookmarkDock() {
         const el = document.createElement("button");
         el.type = "button";
         el.className = "bookmark-dock-icon";
-        el.style.color = fb.dataset.color || "currentColor";
-        el.innerHTML = BOOKMARK_SVG;
+        el.innerHTML = bookmarkSvgMarkup(fb.dataset.color || "currentColor", Number(fb.dataset.variant || 0));
         el.addEventListener("click", () => {
           fb.scrollIntoView({ behavior: "smooth", block: "center" });
           fb.classList.add("bookmark-flash");

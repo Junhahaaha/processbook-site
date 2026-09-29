@@ -152,18 +152,18 @@ h3 {
 /* Bookmark ribbon(s) tucked in behind a card's top edge, one per feedback
    bookmark, side by side (see layoutClips) — only the top of each ribbon
    peeks out above the card; the rest is covered by the card's own opaque
-   background. Rendered as an inline SVG fill (recolored per-bookmark via
-   `color`/currentColor) rather than a CSS mask-image div — a masked,
-   absolutely-positioned element here previously triggered a real rendering
-   bug (huge/mispositioned, or only one of several clips on a card painting
-   at all) specific to combining position:absolute + mask-image with the
-   subject page's multicol masonry grid ancestor. */
+   background. Same art as the 3D notebook cover (see BookmarkIcon), not a
+   CSS mask-image div — a masked, absolutely-positioned element here
+   previously triggered a real rendering bug (huge/mispositioned, or only
+   one of several clips on a card painting at all) specific to combining
+   position:absolute + mask-image with the subject page's multicol masonry
+   grid ancestor. */
 .card-clip {
   position: absolute;
-  top: -10px;
+  top: -9px;
   left: 14px;
-  width: 20px;
-  height: 27px;
+  width: 18px;
+  height: 31px;
   pointer-events: none;
   filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.35));
 }
@@ -995,8 +995,7 @@ h3 {
 .annotation-popover-icon {
   flex: 0 0 auto;
   width: 14px;
-  height: 19px;
-  color: var(--accent);
+  height: 24px;
 }
 .annotation-popover-quote {
   margin: 0 0 10px;
@@ -1029,9 +1028,9 @@ h3 {
 .user-bookmark-margin-icon {
   position: absolute;
   top: 1px;
-  right: -26px;
-  width: 15px;
-  height: 20px;
+  right: -24px;
+  width: 14px;
+  height: 25px;
   pointer-events: none;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
