@@ -55,6 +55,40 @@ function readAssignmentName(itemDir) {
   return data.assignment || "";
 }
 
+// gray-matter/js-yaml parses an unquoted "date: 2026-09-20" as a native Date,
+// so normalize both Date and string frontmatter values to "YYYY-MM-DD".
+function normalizeDate(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+// Finds the process note(s) already written for this item on this date, so
+// web feedback can be merged into that day's real entry instead of living in
+// its own file. Only looks at top-level .md files (not subfolders), and skips
+// any note that is itself a past web-feedback note.
+function findProcessNotesForDate(itemDir, date) {
+  const names = fs
+    .readdirSync(itemDir, { withFileTypes: true })
+    .filter((d) => d.isFile() && d.name.endsWith(".md"))
+    .map((d) => d.name)
+    .sort();
+
+  const matches = [];
+  for (const name of names) {
+    const full = path.join(itemDir, name);
+    let data;
+    try {
+      ({ data } = matter(fs.readFileSync(full, "utf-8")));
+    } catch {
+      continue;
+    }
+    if (data.type === "feedback") continue;
+    if (normalizeDate(data.date) === date) matches.push(full);
+  }
+  return matches;
+}
+
 function listInboxFiles() {
   const results = [];
   function walk(dir) {
@@ -112,27 +146,40 @@ for (const { subject, item, date, entries } of groups.values()) {
 
   entries.sort((a, b) => a.submittedAt.localeCompare(b.submittedAt));
   const feedbackBlocks = entries.map((e) => "```feedback\n" + e.text + "\n```").join("\n\n");
-  const noteFile = path.join(itemDir, `${date}_웹피드백.md`);
 
-  if (fs.existsSync(noteFile)) {
+  const processMatches = findProcessNotesForDate(itemDir, date);
+  let noteFile;
+  if (processMatches.length > 0) {
+    noteFile = processMatches[0];
+    if (processMatches.length > 1) {
+      const rest = processMatches.slice(1).map((m) => path.basename(m)).join(", ");
+      console.warn(`  ! ${subject}/${item}/${date}: 같은 날짜 노트가 여러 개예요. "${path.basename(noteFile)}"에만 반영해요. (나머지: ${rest})`);
+    }
     const existing = fs.readFileSync(noteFile, "utf-8");
     fs.writeFileSync(noteFile, existing.replace(/\s*$/, "") + "\n\n" + feedbackBlocks + "\n", "utf-8");
   } else {
-    const subjectMeta = SUBJECTS.find((s) => s.slug === subject);
-    const frontmatter = [
-      "---",
-      "type: feedback",
-      `subject: ${subjectMeta ? subjectMeta.vaultFolder : ""}`,
-      "category: 웹 피드백",
-      `assignment: ${readAssignmentName(itemDir)}`,
-      `date: ${date}`,
-      "status: ",
-      "tags: [web-feedback]",
-      "---",
-      "",
-      "",
-    ].join("\n");
-    fs.writeFileSync(noteFile, frontmatter + feedbackBlocks + "\n", "utf-8");
+    // No process note exists for this date yet — fall back to a dedicated file.
+    noteFile = path.join(itemDir, `${date}_웹피드백.md`);
+    if (fs.existsSync(noteFile)) {
+      const existing = fs.readFileSync(noteFile, "utf-8");
+      fs.writeFileSync(noteFile, existing.replace(/\s*$/, "") + "\n\n" + feedbackBlocks + "\n", "utf-8");
+    } else {
+      const subjectMeta = SUBJECTS.find((s) => s.slug === subject);
+      const frontmatter = [
+        "---",
+        "type: feedback",
+        `subject: ${subjectMeta ? subjectMeta.vaultFolder : ""}`,
+        "category: 웹 피드백",
+        `assignment: ${readAssignmentName(itemDir)}`,
+        `date: ${date}`,
+        "status: ",
+        "tags: [web-feedback]",
+        "---",
+        "",
+        "",
+      ].join("\n");
+      fs.writeFileSync(noteFile, frontmatter + feedbackBlocks + "\n", "utf-8");
+    }
   }
 
   console.log(`  ${subject}/${item}: ${entries.length}개 피드백 -> ${path.relative(VAULT_ROOT, noteFile)}`);
