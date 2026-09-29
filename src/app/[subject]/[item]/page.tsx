@@ -6,6 +6,7 @@ import { extractLinkCardUrls, fetchLinkMetaMap } from "@/lib/link-meta.server";
 import ProcessMarkdown from "@/components/markdown/ProcessMarkdown";
 import BookmarkDock from "@/components/bookmark/BookmarkDock";
 import FeedbackForm from "@/components/FeedbackForm";
+import AnnotationToolbar from "@/components/annotate/AnnotationToolbar";
 
 export function generateStaticParams() {
   return getAllItemSlugs().map(({ subject, item }) => ({ subject, item }));
@@ -72,6 +73,7 @@ export default async function ItemPage({
       <FeedbackForm subjectSlug={subjectSlug} itemSlug={itemSlug} />
 
       <BookmarkDock />
+      <AnnotationToolbar subjectSlug={subjectSlug} itemSlug={itemSlug} />
     </main>
   );
 }
