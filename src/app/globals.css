@@ -129,6 +129,7 @@ h3 {
    transform the card gets (they're both descendants of the same
    transformed element, so they move together automatically). */
 .item-card {
+  display: block;
   position: relative;
   width: 100%;
   margin: 0 0 16px;
