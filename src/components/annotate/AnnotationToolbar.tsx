@@ -219,13 +219,15 @@ export default function AnnotationToolbar({
             {pending.tool === "highlight" ? "형광펜으로 표시" : "책갈피 남기기"}
           </p>
           <blockquote className="annotation-popover-quote">{pending.quote}</blockquote>
-          <textarea
-            className="annotation-popover-memo"
-            placeholder="메모 (선택)"
-            value={memo}
-            onChange={(e) => setMemo(e.target.value)}
-            rows={2}
-          />
+          {pending.tool === "bookmark" && (
+            <textarea
+              className="annotation-popover-memo"
+              placeholder="메모 (선택)"
+              value={memo}
+              onChange={(e) => setMemo(e.target.value)}
+              rows={2}
+            />
+          )}
           {needsCode && (
             <input
               type="password"

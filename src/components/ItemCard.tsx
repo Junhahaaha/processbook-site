@@ -71,10 +71,13 @@ export default function ItemCard({
   // doesn't move relative to the card during one drag).
   const dragGravityTarget = useRef(0);
   // The transform-origin actually in effect right now (local, untransformed
-  // px), so a new grab can compensate for moving it — see handlePointerDown.
+  // px), so a new grab can compensate for moving it — see handlePointerMove.
   // null until the first grab, when it defaults to the box's own center
   // (the CSS initial value, "50% 50%").
   const currentOrigin = useRef<{ x: number; y: number } | null>(null);
+  // Where the pointer went down, captured on pointerdown but not acted on
+  // until a drag is confirmed (past DRAG_THRESHOLD) — see handlePointerMove.
+  const grabPoint = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setSettled(true), entranceDelay);
@@ -154,84 +157,17 @@ export default function ItemCard({
 
   function handlePointerDown(e: PointerEvent<HTMLAnchorElement>) {
     if (e.button !== 0) return;
-    const el = ref.current;
-    if (el) {
-      // Pivot the rotation (base tilt, hover tilt, and the swing) around
-      // wherever the card was actually grabbed, not its center — offsetX/Y
-      // are already local to the element and transform-corrected by the
-      // browser, so this is right even though the card sits rotated.
-      const grabX = e.nativeEvent.offsetX;
-      const grabY = e.nativeEvent.offsetY;
-
-      // Moving transform-origin mid-rotation is not visually a no-op: the
-      // same rotate() angle traces a different arc around a different
-      // pivot, so switching the origin outright made the card instantly
-      // jump to a different screen position the moment it was re-grabbed
-      // (looking like it snapped back toward flat before swinging out
-      // again to the new pivot). Compensate by shifting the translate so
-      // the box stays exactly where it currently is at the instant of the
-      // switch — only *then* does the spring start animating the angle
-      // toward the new grab's target, with no jump to animate away from.
-      // For a rotation R by the current angle (plus current hover scale)
-      // around old origin O, switching to new origin O' needs a
-      // translate delta of -(I - R) * (O' - O) to hold the box fixed.
-      // Doing this correction through the lingering CSS transition left on
-      // from the last release (transitionProperty stays "transform,
-      // opacity" until a real drag starts) would smooth this one large,
-      // supposed-to-be-invisible jump into a very visible 150ms slide
-      // through the wrong in-between state — turn it off first so the
-      // correction actually lands instantly, same frame.
-      el.style.transitionProperty = "none";
-      const prevOrigin = currentOrigin.current ?? { x: el.offsetWidth / 2, y: el.offsetHeight / 2 };
-      const currentAngleRad = ((baseRotation + swing.current.angle) * Math.PI) / 180;
-      const s = t.current.scale;
-      const cos = Math.cos(currentAngleRad) * s;
-      const sin = Math.sin(currentAngleRad) * s;
-      const dOx = grabX - prevOrigin.x;
-      const dOy = grabY - prevOrigin.y;
-      t.current.dragX -= dOx - (dOx * cos - dOy * sin);
-      t.current.dragY -= dOy - (dOx * sin + dOy * cos);
-
-      el.style.transformOrigin = `${grabX}px ${grabY}px`;
-      currentOrigin.current = { x: grabX, y: grabY };
-      applyTransform();
-
-      // Gravity target: the angle that swings the center of mass to hang
-      // directly below the grab point. gx/gy is the grab point's offset
-      // from center; the center of mass sits at -gx/-gy relative to the
-      // grab point, and we solve for the rotation that points that vector
-      // straight down (CSS's rotate() is clockwise-positive in screen
-      // (Y-down) coordinates, so this is a plain 2D rotation solve in
-      // screen space, not "true" 3D gravity). This is the FULL angle,
-      // un-scaled — a pendulum's resting angle only depends on the
-      // direction from pivot to center of mass, not on the lever length
-      // (that only affects how fast it gets there, which the spring's
-      // constant stiffness already approximates well enough here). A
-      // previous version scaled the angle down by how close the grab was
-      // to the exact corner, which was wrong: it meant only a literal
-      // corner grab ever reached the true equilibrium, so a side-edge grab
-      // (a shorter, purely-horizontal-or-vertical lever) stopped partway,
-      // and a bottom-edge grab never reached the full 180° flip it should.
-      // Only truly near-center grabs (lever ~0) fall back to 0, since the
-      // direction is undefined right at the center of mass itself.
-      const centerX = el.offsetWidth / 2;
-      const centerY = el.offsetHeight / 2;
-      const gx = grabX - centerX;
-      const gy = grabY - centerY;
-      const lever = Math.hypot(gx, gy);
-      if (lever > 2) {
-        const equilibrium = 90 - (Math.atan2(-gy, -gx) * 180) / Math.PI;
-        dragGravityTarget.current = wrapDegrees(equilibrium);
-      } else {
-        dragGravityTarget.current = 0;
-      }
-    }
+    // Just record where it was grabbed — everything that actually makes the
+    // card react (pivoting rotation around this point, the gravity target,
+    // starting the swing loop) is deferred to the moment a drag is confirmed
+    // past DRAG_THRESHOLD (see handlePointerMove). A plain click/dblclick to
+    // open the item never crosses that threshold, so it stays visually
+    // inert — only a real press-and-drag makes the card respond.
+    grabPoint.current = ref.current
+      ? { x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY }
+      : null;
     dragStart.current = { x: e.clientX, y: e.clientY, originX: t.current.dragX, originY: t.current.dragY };
     justDragged.current = false;
-    // Gravity should start pulling the instant it's held, not only once the
-    // cursor first moves — and must run regardless of what setPointerCapture
-    // below does, so it comes first.
-    ensureSwingLoop();
     try {
       ref.current?.setPointerCapture(e.pointerId);
     } catch {
@@ -252,6 +188,62 @@ export default function ItemCard({
         el.style.transitionProperty = "none"; // no lag while actively dragging
         el.style.zIndex = "30";
         el.style.cursor = "grabbing";
+
+        // Only now that this is confirmed to be a real drag (not a click
+        // meant to just open the item) do we pivot rotation around the
+        // grabbed point and start the gravity pull toward it.
+        const grab = grabPoint.current;
+        if (grab) {
+          // Moving transform-origin mid-rotation is not visually a no-op:
+          // the same rotate() angle traces a different arc around a
+          // different pivot, so switching the origin outright would make
+          // the card instantly jump to a different screen position the
+          // moment it's grabbed (looking like it snapped back toward flat
+          // before swinging out again to the new pivot). Compensate by
+          // shifting the translate so the box stays exactly where it
+          // currently is at the instant of the switch — only *then* does
+          // the spring start animating the angle toward the new grab's
+          // target, with no jump to animate away from. For a rotation R by
+          // the current angle (plus current hover scale) around old origin
+          // O, switching to new origin O' needs a translate delta of
+          // -(I - R) * (O' - O) to hold the box fixed.
+          const prevOrigin = currentOrigin.current ?? { x: el.offsetWidth / 2, y: el.offsetHeight / 2 };
+          const currentAngleRad = ((baseRotation + swing.current.angle) * Math.PI) / 180;
+          const s = t.current.scale;
+          const cos = Math.cos(currentAngleRad) * s;
+          const sin = Math.sin(currentAngleRad) * s;
+          const dOx = grab.x - prevOrigin.x;
+          const dOy = grab.y - prevOrigin.y;
+          t.current.dragX -= dOx - (dOx * cos - dOy * sin);
+          t.current.dragY -= dOy - (dOx * sin + dOy * cos);
+
+          el.style.transformOrigin = `${grab.x}px ${grab.y}px`;
+          currentOrigin.current = { x: grab.x, y: grab.y };
+          // The drag-follow baseline below must continue from this
+          // just-compensated translate, not the pre-compensation one.
+          dragStart.current.originX = t.current.dragX;
+          dragStart.current.originY = t.current.dragY;
+
+          // Gravity target: the angle that swings the center of mass to
+          // hang directly below the grab point. gx/gy is the grab point's
+          // offset from center; the center of mass sits at -gx/-gy relative
+          // to the grab point, and we solve for the rotation that points
+          // that vector straight down (CSS's rotate() is clockwise-positive
+          // in screen (Y-down) coordinates, so this is a plain 2D rotation
+          // solve in screen space, not "true" 3D gravity). This is the
+          // FULL angle, un-scaled — a pendulum's resting angle only depends
+          // on the direction from pivot to center of mass, not on the lever
+          // length. Only truly near-center grabs (lever ~0) fall back to 0,
+          // since the direction is undefined right at the center of mass.
+          const centerX = el.offsetWidth / 2;
+          const centerY = el.offsetHeight / 2;
+          const gx = grab.x - centerX;
+          const gy = grab.y - centerY;
+          const lever = Math.hypot(gx, gy);
+          dragGravityTarget.current =
+            lever > 2 ? wrapDegrees(90 - (Math.atan2(-gy, -gx) * 180) / Math.PI) : 0;
+        }
+        ensureSwingLoop();
       }
       if (justDragged.current) {
         t.current.dragX = dragStart.current.originX + dx;
@@ -288,18 +280,23 @@ export default function ItemCard({
   function handlePointerUp() {
     if (!dragStart.current) return;
     dragStart.current = null;
-    // If it hadn't finished converging on the gravity target yet (still
-    // actively swinging, or the loop had already stopped and needs waking
-    // back up), releasing gets the firm "stick" treatment to settle in
-    // quickly rather than keep wobbling. The target itself doesn't change
-    // on release — the card just stays hanging wherever it settles.
-    if (
-      Math.abs(swing.current.angle - dragGravityTarget.current) > SWING_SETTLE_EPSILON ||
-      Math.abs(swing.current.velocity) > SWING_SETTLE_EPSILON
-    ) {
-      justReleasedFromDrag.current = true;
+    // Only a confirmed drag (past DRAG_THRESHOLD) ever touched the swing/
+    // gravity state, so a plain click has nothing to settle — skip straight
+    // to resetting cursor/tilt below instead of waking the swing loop.
+    if (justDragged.current) {
+      // If it hadn't finished converging on the gravity target yet (still
+      // actively swinging, or the loop had already stopped and needs waking
+      // back up), releasing gets the firm "stick" treatment to settle in
+      // quickly rather than keep wobbling. The target itself doesn't change
+      // on release — the card just stays hanging wherever it settles.
+      if (
+        Math.abs(swing.current.angle - dragGravityTarget.current) > SWING_SETTLE_EPSILON ||
+        Math.abs(swing.current.velocity) > SWING_SETTLE_EPSILON
+      ) {
+        justReleasedFromDrag.current = true;
+      }
+      ensureSwingLoop();
     }
-    ensureSwingLoop();
     const el = ref.current;
     if (el) {
       el.style.transitionProperty = "transform, opacity";
