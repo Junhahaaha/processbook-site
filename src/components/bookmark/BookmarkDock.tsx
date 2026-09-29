@@ -7,6 +7,13 @@ const SCALE_MIN = 0.6;
 const SCALE_MAX = 1.5;
 const GAP_MIN = 1;
 const GAP_MAX = 12;
+// How much of the icon reads as "still planted in the ground" at its
+// furthest — half-buried, then rises out (clip shrinks toward 0) the closer
+// you scroll toward it. Fully unearthed right as it's about to scroll into
+// view, at which point it disappears from the dock — the in-place margin
+// icon next to that paragraph (see AnnotationToolbar) is the "pulled
+// bookmark" left sitting there.
+const BURIED_MAX = 52;
 
 type TrackedItem = { fb: HTMLElement; el: HTMLButtonElement; dist: number };
 
@@ -48,6 +55,8 @@ export default function BookmarkDock() {
         const t = Math.min(item.dist / (maxDist * 0.35), 1);
         const scale = SCALE_MAX - t * (SCALE_MAX - SCALE_MIN);
         item.el.style.transform = `scale(${scale.toFixed(2)})`;
+        const buried = t * BURIED_MAX;
+        item.el.style.clipPath = `inset(0 0 ${buried.toFixed(1)}% 0)`;
         const ratio = Math.pow((scale - SCALE_MIN) / (SCALE_MAX - SCALE_MIN), 1.8);
         item.el.style.marginRight = `${(GAP_MIN + ratio * (GAP_MAX - GAP_MIN)).toFixed(1)}px`;
         dock!.appendChild(item.el);

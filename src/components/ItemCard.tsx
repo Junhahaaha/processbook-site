@@ -41,17 +41,26 @@ function wrapDegrees(deg: number): number {
 
 export default function ItemCard({
   href,
-  className,
-  style,
+  faceClassName,
+  faceStyle,
+  outerStyle,
   baseRotation,
   entranceDelay,
+  clips,
   children,
 }: {
   href: string;
-  className: string;
-  style?: CSSProperties;
+  faceClassName?: string;
+  faceStyle?: CSSProperties;
+  outerStyle?: CSSProperties;
   baseRotation: number;
   entranceDelay: number;
+  // Rendered as a sibling *before* the face div, both inside the same <a> —
+  // so it inherits the exact same drag/swing/entrance transform the card
+  // gets (moves with it), while still painting behind the face's own
+  // background (a box's own background always paints before all of its
+  // descendants, so DOM order among siblings is what makes this "behind").
+  clips?: ReactNode;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLAnchorElement>(null);
@@ -334,9 +343,9 @@ export default function ItemCard({
       ref={ref}
       href={href}
       draggable={false}
-      className={className}
+      className="item-card"
       style={{
-        ...style,
+        ...outerStyle,
         touchAction: "none",
         userSelect: "none",
         WebkitUserSelect: "none",
@@ -356,7 +365,10 @@ export default function ItemCard({
       onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}
     >
-      {children}
+      {clips}
+      <div className={`item-card-face ${faceClassName ?? ""}`} style={faceStyle}>
+        {children}
+      </div>
     </a>
   );
 }

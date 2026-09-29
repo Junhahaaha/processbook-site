@@ -41,32 +41,26 @@ export default async function SubjectPage({ params }: { params: Promise<{ subjec
           const clips = layoutClips(bookmarkColors.length);
 
           return (
-            // Clips render as siblings *before* the card (not as its
-            // children) so they paint behind the card's own opaque
-            // background — a child element can never do that regardless of
-            // z-index, since a box's own background always paints before
-            // (under) all of its descendants. This wrapper is the actual
-            // multicol column-item now; the card fills it.
-            <div key={item.slug} className="item-card-wrap" style={{ marginTop: offsetY }}>
-              {clips.map((c, ci) => (
+            <ItemCard
+              key={item.slug}
+              href={`/${subjectSlug}/${item.slug}`}
+              faceClassName={skin ? `item-card-skinned item-card-skin-${skin.type}` : ""}
+              faceStyle={
+                skin
+                  ? { aspectRatio: skin.ratio, backgroundImage: `url(/card-skins/${skin.file})` }
+                  : undefined
+              }
+              outerStyle={{ marginTop: offsetY }}
+              baseRotation={rotation}
+              entranceDelay={i * 55}
+              clips={clips.map((c, ci) => (
                 <CardClip key={ci} color={bookmarkColors[ci]} offsetX={c.offsetX} variant={c.variant} />
               ))}
-              <ItemCard
-                href={`/${subjectSlug}/${item.slug}`}
-                className={`item-card ${skin ? `item-card-skinned item-card-skin-${skin.type}` : ""}`}
-                baseRotation={rotation}
-                entranceDelay={i * 55}
-                style={
-                  skin
-                    ? { aspectRatio: skin.ratio, backgroundImage: `url(/card-skins/${skin.file})` }
-                    : undefined
-                }
-              >
-                <div className="item-card-top">
-                  <h2>{item.name}</h2>
-                </div>
-              </ItemCard>
-            </div>
+            >
+              <div className="item-card-top">
+                <h2>{item.name}</h2>
+              </div>
+            </ItemCard>
           );
         })}
         {items.length === 0 && <p className="empty-state">아직 등록된 항목이 없습니다.</p>}

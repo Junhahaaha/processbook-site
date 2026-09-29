@@ -122,48 +122,49 @@ h3 {
   column-gap: 16px;
 }
 
+/* The <a> itself only handles position/interaction/the whole-card drag
+   transform now — the visible surface (background, border, padding) lives
+   on .item-card-face, a child rendered *after* the clip(s) (see ItemCard),
+   so clips paint behind that surface while still inheriting every
+   transform the card gets (they're both descendants of the same
+   transformed element, so they move together automatically). */
 .item-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   width: 100%;
   margin: 0 0 16px;
   break-inside: avoid;
   cursor: grab;
+}
+.item-card-face {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 22px;
   box-shadow: var(--shadow);
 }
-.item-card:hover {
+.item-card:hover .item-card-face {
   border-color: var(--line-strong);
-}
-
-/* One card-wrap per card in the grid (see [subject]/page.tsx) — the actual
-   multicol column-item now, so a clip rendered as its child but *before*
-   the card in DOM order paints behind the card's own background. */
-.item-card-wrap {
-  position: relative;
-  break-inside: avoid;
 }
 
 /* Bookmark ribbon(s) tucked in behind a card's top edge, one per feedback
    bookmark, side by side (see layoutClips) — only the top of each ribbon
-   peeks out above the card; the rest is covered by the card's own opaque
-   background. Same art as the 3D notebook cover (see BookmarkIcon), not a
-   CSS mask-image div — a masked, absolutely-positioned element here
+   peeks out above the card; the rest is covered by .item-card-face's own
+   opaque background. Same art as the 3D notebook cover (see BookmarkIcon),
+   not a CSS mask-image div — a masked, absolutely-positioned element here
    previously triggered a real rendering bug (huge/mispositioned, or only
    one of several clips on a card painting at all) specific to combining
    position:absolute + mask-image with the subject page's multicol masonry
    grid ancestor. */
 .card-clip {
   position: absolute;
-  top: -9px;
-  left: 14px;
-  width: 18px;
-  height: 31px;
+  top: -16px;
+  left: 16px;
+  width: 26px;
+  height: 45px;
   pointer-events: none;
   filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.35));
 }
@@ -182,7 +183,7 @@ h3 {
   background-size: cover;
   background-position: center;
 }
-.item-card-skinned:hover {
+.item-card:hover .item-card-skinned {
   border-color: transparent;
 }
 .item-card-skinned > * {
@@ -1046,7 +1047,7 @@ h3 {
   right: 20px;
   bottom: 20px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-end;
   z-index: 40;
   pointer-events: none;
@@ -1060,7 +1061,7 @@ h3 {
   height: 30px;
   cursor: pointer;
   transform-origin: bottom right;
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, clip-path 0.15s ease;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
 }
 .bookmark-dock-icon:hover {
