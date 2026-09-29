@@ -27,6 +27,7 @@ export default function ProcessMarkdown({
   const components: Components = {
     pre: ({ children }) => <>{children}</>,
     img: (props) => <ZoomableImage {...props} />,
+    em: ({ children }) => <mark className="highlight-mark">{children}</mark>,
     code(props) {
       const { className, children } = props;
       const raw = String(children ?? "").replace(/\n$/, "");

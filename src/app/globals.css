@@ -23,6 +23,8 @@
   --status-progress: #3f7cc0;
   --status-feedback: #c99a2e;
   --status-done: #2f5d50;
+
+  --highlight: rgba(255, 209, 61, 0.55);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +40,8 @@
     --accent: #79bba7;
     --accent-soft: #233530;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -16px rgba(0, 0, 0, 0.5);
+
+    --highlight: rgba(255, 209, 61, 0.38);
   }
 }
 
@@ -262,6 +266,21 @@ h3 {
   padding: 14px 16px;
   overflow-x: auto;
   font-size: 13px;
+}
+.prose-content .highlight-mark {
+  background: linear-gradient(
+    104deg,
+    transparent 0%,
+    var(--highlight) 6%,
+    var(--highlight) 94%,
+    transparent 100%
+  );
+  background-color: transparent;
+  color: inherit;
+  font-style: normal;
+  padding: 0.02em 0.15em;
+  margin: 0 -0.05em;
+  border-radius: 2px;
 }
 
 .entry-timeline {
