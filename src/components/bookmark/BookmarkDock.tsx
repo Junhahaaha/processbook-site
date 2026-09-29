@@ -3,25 +3,38 @@
 import { useEffect, useRef } from "react";
 import { bookmarkSvgMarkup } from "@/components/BookmarkIcon";
 
-const SCALE_MIN = 0.6;
-const SCALE_MAX = 1.5;
-const GAP_MIN = 1;
-const GAP_MAX = 12;
+const SCALE_MIN = 0.55;
+const SCALE_MAX = 1; // 1 = exactly the landed size, so arrival has no size jump
+const ICON_W = 14;
+const ICON_H = 24;
+const DOCK_RIGHT = 20;
+const STACK_GAP = 16; // horizontal spread between multiple far-away icons
 // How much of the icon reads as "still planted in the ground" at its
 // furthest — half-buried, then rises out (clip shrinks toward 0) the closer
-// you scroll toward it. Fully unearthed right as it's about to scroll into
-// view, at which point it disappears from the dock — the in-place margin
-// icon next to that paragraph (see AnnotationToolbar) is the "pulled
-// bookmark" left sitting there.
+// you scroll toward it, reaching 0 exactly on arrival.
 const BURIED_MAX = 52;
 
-type TrackedItem = { fb: HTMLElement; el: HTMLButtonElement; dist: number };
+type TrackedItem = {
+  fb: HTMLElement;
+  el: HTMLButtonElement;
+  // Once true, el has been reparented into fb as a normal in-flow marker
+  // and this loop stops repositioning it — from then on it scrolls with
+  // the page like any other content, which is the whole point (a reader
+  // asked for the bookmark to keep "coming up with the page" once it's
+  // surfaced, not just vanish from a fixed corner).
+  landed: boolean;
+};
 
 /**
- * Reads every [data-feedback-block] on the page and shows a shrinking-toward-
- * the-right row of bookmark icons for the ones still below the viewport.
- * Ported from the vanilla-JS prototype validated earlier — see process-book
- * spec doc for the algorithm this mirrors (closest = biggest = leftmost).
+ * Reads every [data-feedback-block] on the page. While one is still below
+ * the viewport, its icon lives in the fixed bottom-right corner, growing
+ * and rising out of a "buried" clip as you scroll closer — and physically
+ * travels (via interpolated fixed left/top) from that corner toward the
+ * block's own top-right corner as it does, so full size + full reveal + the
+ * travel both complete at exactly the same moment, right as the block
+ * reaches the bottom of the viewport. At that instant it's reparented in
+ * place (position:absolute inside the block) with no jump, and continues
+ * scrolling normally as ordinary page content from then on.
  */
 export default function BookmarkDock() {
   const dockRef = useRef<HTMLDivElement>(null);
@@ -33,34 +46,69 @@ export default function BookmarkDock() {
     let items: TrackedItem[] = [];
     let raf = 0;
 
+    // Reparents the icon into the block as a normal in-flow marker, at
+    // exactly (right:0, top:1px) — the same point the travel animation
+    // interpolates toward, so there's nothing to jump: by construction the
+    // fixed-position frame right before this one already renders it here.
+    function land(item: TrackedItem) {
+      item.landed = true;
+      const fb = item.fb;
+      if (!fb.style.position) fb.style.position = "relative";
+      if (!fb.style.paddingRight) fb.style.paddingRight = "20px";
+      const el = item.el;
+      el.style.transition = "none";
+      el.style.transform = "none";
+      el.style.clipPath = "none";
+      el.style.position = "absolute";
+      el.style.left = "auto";
+      el.style.top = "1px";
+      el.style.right = "0";
+      el.style.width = `${ICON_W}px`;
+      el.style.height = `${ICON_H}px`;
+      fb.appendChild(el);
+    }
+
     function update() {
       const vh = window.innerHeight;
-      const upcoming: TrackedItem[] = [];
-
-      for (const item of items) {
-        const r = item.fb.getBoundingClientRect();
-        if (r.top >= vh) {
-          item.el.hidden = false;
-          item.dist = r.top - vh;
-          upcoming.push(item);
-        } else {
-          item.el.hidden = true;
-        }
-      }
-
-      upcoming.sort((a, b) => a.dist - b.dist);
-
+      const vw = window.innerWidth;
       const maxDist = Math.max(document.body.scrollHeight, 1);
-      upcoming.forEach((item, i) => {
-        const t = Math.min(item.dist / (maxDist * 0.35), 1);
-        const scale = SCALE_MAX - t * (SCALE_MAX - SCALE_MIN);
-        item.el.style.transform = `scale(${scale.toFixed(2)})`;
+
+      const active = items.filter((it) => !it.landed);
+      const withMeta = active
+        .map((it) => {
+          const r = it.fb.getBoundingClientRect();
+          return { it, top: r.top, right: r.right, dist: r.top - vh };
+        })
+        .sort((a, b) => a.dist - b.dist);
+
+      withMeta.forEach(({ it, top, right, dist }, i) => {
+        if (top < vh) {
+          land(it);
+          return;
+        }
+
+        const t = Math.min(dist / (maxDist * 0.35), 1); // 1 far -> 0 arriving
+        const p = 1 - t; // 0 far -> 1 arriving
+        const scale = SCALE_MIN + p * (SCALE_MAX - SCALE_MIN);
         const buried = t * BURIED_MAX;
-        item.el.style.clipPath = `inset(0 0 ${buried.toFixed(1)}% 0)`;
-        const ratio = Math.pow((scale - SCALE_MIN) / (SCALE_MAX - SCALE_MIN), 1.8);
-        item.el.style.marginRight = `${(GAP_MIN + ratio * (GAP_MAX - GAP_MIN)).toFixed(1)}px`;
-        dock!.appendChild(item.el);
-        if (i === upcoming.length - 1) item.el.style.marginRight = "0px";
+
+        const startLeft = vw - DOCK_RIGHT - ICON_W - i * STACK_GAP;
+        const startTop = vh - ICON_H;
+        const endLeft = right - ICON_W;
+        const endTop = top + 1;
+        const left = startLeft + (endLeft - startLeft) * p;
+        const elTop = startTop + (endTop - startTop) * p;
+
+        const el = it.el;
+        el.hidden = false;
+        el.style.transition = "clip-path 0.15s ease";
+        el.style.position = "fixed";
+        el.style.width = `${ICON_W}px`;
+        el.style.height = `${ICON_H}px`;
+        el.style.left = `${left}px`;
+        el.style.top = `${elTop}px`;
+        el.style.transform = `scale(${scale.toFixed(2)})`;
+        el.style.clipPath = `inset(0 0 ${buried.toFixed(1)}% 0)`;
       });
     }
 
@@ -70,14 +118,20 @@ export default function BookmarkDock() {
     }
 
     // Rebuilds the tracked-item list from whatever [data-feedback-block]
-    // elements exist right now. Re-run whenever one is added at runtime (the
-    // reading-time annotation toolbar tags a paragraph the same way a
-    // ```feedback block already does), not just once at mount — otherwise a
-    // bookmark placed after this component mounted would never show up here.
+    // elements exist right now, preserving already-landed items in place
+    // (re-running from scratch would reset a landed marker back into the
+    // fixed dock, which would look like it un-planted itself the moment a
+    // second, unrelated bookmark got added elsewhere on the page).
     function rebuild() {
-      for (const item of items) item.el.remove();
       const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-feedback-block]"));
+      const existingByFb = new Map(items.map((it) => [it.fb, it]));
+      const nextFbs = new Set(nodes);
+      for (const it of items) {
+        if (!nextFbs.has(it.fb)) it.el.remove();
+      }
       items = nodes.map((fb) => {
+        const existing = existingByFb.get(fb);
+        if (existing) return existing;
         const el = document.createElement("button");
         el.type = "button";
         el.className = "bookmark-dock-icon";
@@ -87,7 +141,8 @@ export default function BookmarkDock() {
           fb.classList.add("bookmark-flash");
           window.setTimeout(() => fb.classList.remove("bookmark-flash"), 900);
         });
-        return { fb, el, dist: 0 };
+        dock!.appendChild(el);
+        return { fb, el, landed: false };
       });
       update();
     }

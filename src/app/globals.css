@@ -1021,34 +1021,13 @@ h3 {
   background: var(--surface);
   color: var(--ink);
 }
-/* Small ribbon marking exactly where a reader placed a bookmark, in the
-   right margin next to that paragraph — the block itself is also tagged
-   data-feedback-block so BookmarkDock's bottom dock tracks it too (see
-   AnnotationToolbar). Needs the block's own position:relative, set inline
-   at insertion time. */
-.user-bookmark-margin-icon {
-  position: absolute;
-  top: 1px;
-  right: -24px;
-  width: 14px;
-  height: 25px;
-  pointer-events: none;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-}
-.user-bookmark-margin-icon svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-/* bookmark dock */
+/* bookmark dock — see BookmarkDock.tsx for the full lifecycle. Icons are
+   positioned individually (fixed while traveling, then absolute once
+   landed inside their block), not by this container's own layout; it's
+   just an anchor/z-index wrapper. */
 .bookmark-dock {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
+  inset: 0;
   z-index: 40;
   pointer-events: none;
 }
@@ -1057,12 +1036,9 @@ h3 {
   background: none;
   border: none;
   padding: 0;
-  width: 22px;
-  height: 30px;
   cursor: pointer;
   transform-origin: bottom right;
-  transition: transform 0.15s ease, clip-path 0.15s ease;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
 }
 .bookmark-dock-icon:hover {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4)) brightness(1.1);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import BookmarkIcon, { bookmarkSvgMarkup } from "@/components/BookmarkIcon";
+import BookmarkIcon from "@/components/BookmarkIcon";
 import { colorForIndex } from "@/lib/colors";
 
 type Tool = "highlight" | "bookmark";
@@ -184,21 +184,16 @@ export default function AnnotationToolbar({
         window.getSelection()?.removeAllRanges();
       } else if (pending.tool === "bookmark" && pending.anchorEl && pending.color) {
         // Tags the bookmarked paragraph exactly like a ```feedback block
-        // (data-feedback-block/-color + --feedback-color), so it's picked up
-        // by the same BookmarkDock that already tracks those — one bottom
-        // dock for every kind of bookmark, growing as you scroll toward it.
-        // The small ribbon in the right margin marks the spot in place.
+        // (data-feedback-block/-color/-variant + --feedback-color). That's
+        // the entire hand-off to BookmarkDock, which owns the rest of the
+        // lifecycle from here: the bottom-corner icon, its grow-and-rise
+        // travel toward this exact block as the reader scrolls closer, and
+        // reparenting it in place once it arrives.
         const block = pending.anchorEl;
-        if (!block.style.position) block.style.position = "relative";
         block.setAttribute("data-feedback-block", "");
         block.dataset.color = pending.color;
         block.dataset.variant = String(pending.variant ?? 0);
         block.style.setProperty("--feedback-color", pending.color);
-
-        const marker = document.createElement("span");
-        marker.className = "user-bookmark-margin-icon";
-        marker.innerHTML = bookmarkSvgMarkup(pending.color, pending.variant ?? 0);
-        block.appendChild(marker);
       }
       closePopover();
     } catch {
