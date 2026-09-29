@@ -25,6 +25,8 @@
   --status-done: #2f5d50;
 
   --highlight: rgba(255, 209, 61, 0.55);
+  --postit: #fdf1a8;
+  --postit-fold: #d9c464;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -42,6 +44,8 @@
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -16px rgba(0, 0, 0, 0.5);
 
     --highlight: rgba(255, 209, 61, 0.38);
+    --postit: #6b6224;
+    --postit-fold: #4c451a;
   }
 }
 
@@ -137,19 +141,29 @@ h3 {
   border-color: var(--line-strong);
 }
 
-/* paperclip(s) pinched onto a card's top-left corner, one per feedback
-   bookmark, side by side (see layoutClips). Rendered as an inline SVG
-   stroke (recolored per-bookmark via `stroke`) rather than a CSS
-   mask-image div — a masked, absolutely-positioned element here used to
-   trigger a real rendering bug (huge/mispositioned, or only one of several
-   clips on a card painting at all) specific to combining position:absolute
-   + mask-image with the subject page's multicol masonry grid ancestor. */
-.item-card .card-clip {
+/* One card-wrap per card in the grid (see [subject]/page.tsx) — the actual
+   multicol column-item now, so a clip rendered as its child but *before*
+   the card in DOM order paints behind the card's own background. */
+.item-card-wrap {
+  position: relative;
+  break-inside: avoid;
+}
+
+/* Bookmark ribbon(s) tucked in behind a card's top edge, one per feedback
+   bookmark, side by side (see layoutClips) — only the top of each ribbon
+   peeks out above the card; the rest is covered by the card's own opaque
+   background. Rendered as an inline SVG fill (recolored per-bookmark via
+   `color`/currentColor) rather than a CSS mask-image div — a masked,
+   absolutely-positioned element here previously triggered a real rendering
+   bug (huge/mispositioned, or only one of several clips on a card painting
+   at all) specific to combining position:absolute + mask-image with the
+   subject page's multicol masonry grid ancestor. */
+.card-clip {
   position: absolute;
-  top: -12px;
-  left: -10px;
-  width: 32px;
-  height: 32px;
+  top: -10px;
+  left: 14px;
+  width: 20px;
+  height: 27px;
   pointer-events: none;
   filter: drop-shadow(0 1.5px 2px rgba(0, 0, 0, 0.35));
 }
@@ -851,13 +865,32 @@ h3 {
   white-space: pre-wrap;
   font-size: 14.5px;
 }
-/* collapsible toggle note (```toggle) */
+/* collapsible toggle note (```toggle), styled as a folded post-it: a flat
+   yellow note with its top-right corner peeled back — the border-trick
+   triangle (::before) is the exposed underside of the fold, drop-shadowed
+   to read as lifted rather than printed on. */
 .prose-content .toggle-block {
+  position: relative;
   margin: 20px 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-soft);
+  border: none;
+  border-radius: 2px;
+  background: var(--postit);
+  box-shadow:
+    1px 2px 5px rgba(33, 29, 23, 0.2),
+    0 8px 16px -12px rgba(33, 29, 23, 0.35);
   overflow: hidden;
+}
+.prose-content .toggle-block::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 22px 22px 0;
+  border-color: transparent var(--postit-fold) transparent transparent;
+  filter: drop-shadow(-1px 1px 1.5px rgba(0, 0, 0, 0.3));
 }
 .prose-content .toggle-block-summary {
   display: flex;
@@ -947,10 +980,23 @@ h3 {
   background: var(--surface);
   box-shadow: var(--shadow);
 }
-.annotation-popover-title {
+.annotation-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin: 0 0 8px;
+}
+.annotation-popover-title {
+  margin: 0;
   font-weight: 700;
   font-size: 13.5px;
+}
+.annotation-popover-icon {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 19px;
+  color: var(--accent);
 }
 .annotation-popover-quote {
   margin: 0 0 10px;
@@ -975,10 +1021,24 @@ h3 {
   background: var(--surface);
   color: var(--ink);
 }
-.user-bookmark-pin {
-  display: inline-block;
-  margin-right: 4px;
-  font-size: 0.9em;
+/* Small ribbon marking exactly where a reader placed a bookmark, in the
+   right margin next to that paragraph — the block itself is also tagged
+   data-feedback-block so BookmarkDock's bottom dock tracks it too (see
+   AnnotationToolbar). Needs the block's own position:relative, set inline
+   at insertion time. */
+.user-bookmark-margin-icon {
+  position: absolute;
+  top: 1px;
+  right: -26px;
+  width: 15px;
+  height: 20px;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+.user-bookmark-margin-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* bookmark dock */

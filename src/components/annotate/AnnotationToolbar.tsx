@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import BookmarkIcon, { BOOKMARK_PATH } from "@/components/BookmarkIcon";
+import { colorForIndex } from "@/lib/colors";
 
 type Tool = "highlight" | "bookmark";
 type Status = "idle" | "sending" | "error";
@@ -13,8 +15,10 @@ type Pending = {
   // Kept only for "highlight": the live range to wrap once the submission
   // succeeds, so the mark only appears after it's actually been recorded.
   range?: Range;
-  // Kept only for "bookmark": where to drop the pin once submitted.
+  // Kept only for "bookmark": where to drop the marker once submitted, and
+  // the color it'll show as (picked up-front so the popover can preview it).
   anchorEl?: HTMLElement;
+  color?: string;
 };
 
 const BLOCK_SELECTOR = "p, li, h1, h2, h3, h4, blockquote, td, figcaption";
@@ -75,6 +79,10 @@ export default function AnnotationToolbar({
   const [errorMsg, setErrorMsg] = useState("");
   const activeToolRef = useRef<Tool | null>(null);
   activeToolRef.current = activeTool;
+  // Cycles through the shared bookmark palette so bookmarks placed in one
+  // page view read as distinct from each other, same idea as the per-page
+  // feedback-block coloring (see lib/colors.ts).
+  const bookmarkCounter = useRef(0);
 
   useEffect(() => {
     const storedCode = sessionStorage.getItem(CODE_STORAGE_PREFIX + subjectSlug);
@@ -116,7 +124,8 @@ export default function AnnotationToolbar({
 
       const block = targetEl.closest<HTMLElement>(BLOCK_SELECTOR) ?? proseEl;
       const quote = truncate(block.innerText || "", 120);
-      setPending({ tool: "bookmark", quote, x: e.clientX, y: e.clientY, anchorEl: block });
+      const color = colorForIndex(bookmarkCounter.current++, `${subjectSlug}/${itemSlug}`);
+      setPending({ tool: "bookmark", quote, x: e.clientX, y: e.clientY, anchorEl: block, color });
       setStatus("idle");
       setErrorMsg("");
     }
@@ -169,11 +178,23 @@ export default function AnnotationToolbar({
       if (pending.tool === "highlight" && pending.range) {
         wrapRangeAsHighlight(pending.range);
         window.getSelection()?.removeAllRanges();
-      } else if (pending.tool === "bookmark" && pending.anchorEl) {
-        const pin = document.createElement("span");
-        pin.className = "user-bookmark-pin";
-        pin.textContent = "🔖";
-        pending.anchorEl.insertBefore(pin, pending.anchorEl.firstChild);
+      } else if (pending.tool === "bookmark" && pending.anchorEl && pending.color) {
+        // Tags the bookmarked paragraph exactly like a ```feedback block
+        // (data-feedback-block/-color + --feedback-color), so it's picked up
+        // by the same BookmarkDock that already tracks those — one bottom
+        // dock for every kind of bookmark, growing as you scroll toward it.
+        // The small ribbon in the right margin marks the spot in place.
+        const block = pending.anchorEl;
+        if (!block.style.position) block.style.position = "relative";
+        block.setAttribute("data-feedback-block", "");
+        block.dataset.color = pending.color;
+        block.style.setProperty("--feedback-color", pending.color);
+
+        const marker = document.createElement("span");
+        marker.className = "user-bookmark-margin-icon";
+        marker.style.color = pending.color;
+        marker.innerHTML = `<svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="${BOOKMARK_PATH}"/></svg>`;
+        block.appendChild(marker);
       }
       closePopover();
     } catch {
@@ -215,9 +236,14 @@ export default function AnnotationToolbar({
           }}
           onSubmit={handleSubmit}
         >
-          <p className="annotation-popover-title">
-            {pending.tool === "highlight" ? "형광펜으로 표시" : "책갈피 남기기"}
-          </p>
+          <div className="annotation-popover-header">
+            <p className="annotation-popover-title">
+              {pending.tool === "highlight" ? "형광펜으로 표시" : "책갈피 남기기"}
+            </p>
+            {pending.tool === "bookmark" && (
+              <BookmarkIcon color={pending.color} className="annotation-popover-icon" />
+            )}
+          </div>
           <blockquote className="annotation-popover-quote">{pending.quote}</blockquote>
           {pending.tool === "bookmark" && (
             <textarea

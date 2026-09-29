@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { BOOKMARK_PATH } from "@/components/BookmarkIcon";
 
-const BOOKMARK_SVG =
-  '<svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M2 0h20a2 2 0 0 1 2 2v28l-12-8-12 8V2a2 2 0 0 1 2-2Z"/></svg>';
+const BOOKMARK_SVG = `<svg viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="${BOOKMARK_PATH}"/></svg>`;
 
 const SCALE_MIN = 0.6;
 const SCALE_MAX = 1.5;
@@ -25,23 +25,7 @@ export default function BookmarkDock() {
     const dock = dockRef.current;
     if (!dock) return;
 
-    const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-feedback-block]"));
-    if (nodes.length === 0) return;
-
-    const items: TrackedItem[] = nodes.map((fb) => {
-      const el = document.createElement("button");
-      el.type = "button";
-      el.className = "bookmark-dock-icon";
-      el.style.color = fb.dataset.color || "currentColor";
-      el.innerHTML = BOOKMARK_SVG;
-      el.addEventListener("click", () => {
-        fb.scrollIntoView({ behavior: "smooth", block: "center" });
-        fb.classList.add("bookmark-flash");
-        window.setTimeout(() => fb.classList.remove("bookmark-flash"), 900);
-      });
-      return { fb, el, dist: 0 };
-    });
-
+    let items: TrackedItem[] = [];
     let raf = 0;
 
     function update() {
@@ -78,11 +62,58 @@ export default function BookmarkDock() {
       raf = requestAnimationFrame(update);
     }
 
+    // Rebuilds the tracked-item list from whatever [data-feedback-block]
+    // elements exist right now. Re-run whenever one is added at runtime (the
+    // reading-time annotation toolbar tags a paragraph the same way a
+    // ```feedback block already does), not just once at mount — otherwise a
+    // bookmark placed after this component mounted would never show up here.
+    function rebuild() {
+      for (const item of items) item.el.remove();
+      const nodes = Array.from(document.querySelectorAll<HTMLElement>("[data-feedback-block]"));
+      items = nodes.map((fb) => {
+        const el = document.createElement("button");
+        el.type = "button";
+        el.className = "bookmark-dock-icon";
+        el.style.color = fb.dataset.color || "currentColor";
+        el.innerHTML = BOOKMARK_SVG;
+        el.addEventListener("click", () => {
+          fb.scrollIntoView({ behavior: "smooth", block: "center" });
+          fb.classList.add("bookmark-flash");
+          window.setTimeout(() => fb.classList.remove("bookmark-flash"), 900);
+        });
+        return { fb, el, dist: 0 };
+      });
+      update();
+    }
+
+    rebuild();
+
+    const observer = new MutationObserver((mutations) => {
+      const changed = mutations.some((m) => {
+        if (m.type === "attributes") return true;
+        return Array.from(m.addedNodes).some(
+          (n) =>
+            n instanceof HTMLElement &&
+            (n.matches?.("[data-feedback-block]") || n.querySelector?.("[data-feedback-block]"))
+        );
+      });
+      if (changed) rebuild();
+    });
+    // Both forms the reading-time annotation toolbar can use to mark a new
+    // bookmark are covered: tagging an existing paragraph (attribute change)
+    // or inserting a fresh marker node (childList change).
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-feedback-block"],
+    });
+
     window.addEventListener("scroll", onChange, { passive: true });
     window.addEventListener("resize", onChange);
-    update();
 
     return () => {
+      observer.disconnect();
       window.removeEventListener("scroll", onChange);
       window.removeEventListener("resize", onChange);
       cancelAnimationFrame(raf);
